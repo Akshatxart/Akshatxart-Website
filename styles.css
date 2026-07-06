@@ -1,0 +1,357 @@
+:root {
+  --bg: #f5f5f1;
+  --ink: #0a0a0a;
+  --ascii-image-offset: 12%;
+  --ascii-text-offset: -1%;
+  --ascii-mask-start: 72%;
+  --ascii-mask-soft: 92%;
+  --muted: #6f6f68;
+  --line: rgba(10, 10, 10, 0.14);
+  --panel: #ffffff;
+  --inverse: #050505;
+  --inverse-text: #f8f8f3;
+  --soft-shadow: rgba(10, 10, 10, 0.28);
+  --max: 1440px;
+  --gutter: clamp(18px, 3vw, 48px);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+* {
+  box-sizing: border-box;
+  cursor: none !important;
+}
+
+html {
+  scroll-behavior: smooth;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  cursor: none;
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Consolas, "Roboto Mono", Menlo, Monaco, "Courier New", monospace;
+  line-height: 1.45;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+#main {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.scroll-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  overflow: hidden;
+}
+
+.site-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.site-header__logo {
+  display: block;
+  font-size: 0;
+}
+
+.site-header__logo img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+}
+
+.bloom {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(circle, transparent 0%, rgba(245, 245, 241, 0.3) 100%);
+  opacity: 0;
+  transition: opacity 0.5s var(--ease);
+}
+
+.about-section-full {
+  position: relative;
+  z-index: 2;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: clamp(40px, 8vw, 120px) clamp(20px, 4vw, 60px);
+}
+
+.about-section__inner {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  max-width: var(--max);
+  margin: 0 auto;
+  gap: clamp(40px, 6vw, 80px);
+}
+
+.about-section__left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.about-section__content {
+  flex: 1.2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.cv-flip-container {
+  width: 450px;
+  perspective: 1000px;
+  cursor: grab;
+  user-select: none;
+}
+
+.cv-flip-container:active {
+  cursor: grabbing;
+}
+
+.cv-flip-inner {
+  position: relative;
+  width: 100%;
+  transition: transform 0.6s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transform-style: preserve-3d;
+}
+
+.cv-page1,
+.cv-page2 {
+  display: block;
+  width: 100%;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px var(--soft-shadow);
+  backface-visibility: hidden;
+  position: absolute;
+  top: 0;
+  left: 0;
+  transition: opacity 0.6s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.cv-page1 {
+  z-index: 2;
+  opacity: 1;
+}
+
+.cv-page2 {
+  transform: rotateY(-180deg);
+  opacity: 0;
+}
+
+.cv-flip-inner.flipped {
+  transform: rotateY(180deg);
+}
+
+.cv-flip-inner.flipped .cv-page1 {
+  opacity: 0;
+}
+
+.cv-flip-inner.flipped .cv-page2 {
+  opacity: 1;
+}
+
+.cv-label {
+  font-family: "Consolas", "Roboto Mono", monospace;
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 0.9;
+  margin: 0 0 16px;
+  text-transform: lowercase;
+  color: var(--ink);
+}
+
+.cv-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(245, 245, 241, 0.85);
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.cv-overlay__inner {
+  position: relative;
+  width: 100%;
+  max-width: 90vw;
+  max-height: 90vh;
+}
+
+.cv-download-icon {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  font-family: "Consolas", "Roboto Mono", monospace;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: none;
+  background: transparent;
+  width: 40px;
+  height: 40px;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: all 260ms var(--ease);
+}
+
+.cv-download-icon:hover {
+  transform: scale(1.2);
+}
+
+.cv-overlay__pdf {
+  width: 100%;
+  height: 90vh;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 16px 64px var(--soft-shadow);
+  background: white;
+}
+
+.about-section__title {
+  font-family: "Consolas", "Roboto Mono", monospace;
+  font-size: clamp(4rem, 9vw, 8rem);
+  font-weight: 800;
+  letter-spacing: -0.055em;
+  line-height: 0.9;
+  margin: 0 0 24px;
+  text-transform: lowercase;
+  color: var(--ink);
+}
+
+.about-section__bio {
+  margin-bottom: clamp(48px, 6vw, 64px);
+}
+
+.about-section__bio p {
+  font-family: "Consolas", "Roboto Mono", monospace;
+  font-size: clamp(1rem, 1.6vw, 1.35rem);
+  line-height: 1.45;
+  color: var(--ink);
+  margin: 0 0 clamp(14px, 2vw, 22px);
+  font-weight: 400;
+  transform-origin: center center;
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.6s var(--ease);
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+[data-header] {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+
+[data-header].is-scrolled {
+  pointer-events: auto;
+}
+
+[data-tilt] {
+  transition: transform 0.1s ease;
+}
+
+@media (max-width: 991px) {
+  .about-section__inner {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .about-section__content {
+    flex: auto;
+  }
+}
+
+.site-footer {
+  position: relative;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(20px, 4vw, 40px);
+  margin-top: auto;
+}
+
+.site-footer__brand {
+  font-family: "Consolas", "Roboto Mono", monospace;
+  font-size: clamp(0.8rem, 1.2vw, 1rem);
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  color: var(--ink);
+  text-decoration: none;
+  margin-bottom: clamp(8px, 1.5vw, 16px);
+}
+
+.site-footer__brand:hover {
+  opacity: 0.7;
+}
+
+.site-footer__year {
+  font-family: "Consolas", "Roboto Mono", monospace;
+  font-size: clamp(0.8rem, 1.2vw, 1rem);
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.site-footer__year .small-c {
+  font-weight: 700;
+}
+
+.site-footer__year:hover {
+  opacity: 0.7;
+}
