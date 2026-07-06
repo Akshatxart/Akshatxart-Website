@@ -46,123 +46,45 @@ const revealObserver = new IntersectionObserver(
 
 revealItems.forEach((item) => revealObserver.observe(item));
 
-// Gooey Cursor
-const getMousePos = (e) => {
-  return { x: e.clientX, y: e.clientY };
-};
+// Circular Cursor
+const cursorEl = document.querySelector(".cursor__inner");
 
-const getWinSize = () => {
-  return { width: window.innerWidth, height: window.innerHeight };
-};
-
-const isFirefox = () => navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
-
-let mousepos = { x: 0, y: 0 };
-let winsize = getWinSize();
-
-window.addEventListener("mousemove", (ev) => { mousepos = getMousePos(ev); });
-window.addEventListener("pointermove", (ev) => { mousepos = getMousePos(ev); }, { passive: true });
-window.addEventListener("resize", () => { winsize = getWinSize(); });
-
-class GooCursor {
-  constructor(DOM_el) {
-    this.DOM = { el: DOM_el, inner: null, cells: null };
-    this.cellSize = 0;
-    this.rows = 0;
-    this.columns = 0;
-    this.cellsTotal = 0;
-    this.settings = { ttl: 0.03 };
-
-    this.DOM.inner = this.DOM.el.querySelector(".cursor__inner");
-
-    if (!isFirefox()) {
-      this.DOM.inner.style.filter = "url(#gooey)";
-    }
-
-    this.settings.ttl = this.DOM.el.getAttribute("data-ttl") || this.settings.ttl;
-
-    this.layout();
-    this.initEvents();
-  }
-
-  initEvents() {
-    window.addEventListener("resize", () => this.layout());
-
-    this.cursorTarget = { x: -1000, y: -1000 };
-    this.cursorPos = { x: -1000, y: -1000 };
-    this.cursorLerp = 0.4;
-
-    const handleMove = (ev) => {
-      this.cursorTarget = { x: ev.clientX, y: ev.clientY };
-    };
-
-    window.addEventListener("mousemove", handleMove);
-    window.addEventListener("pointermove", handleMove, { passive: true });
-
-    this.animateCursor();
-  }
-
-  animateCursor() {
-    this.cursorPos.x += (this.cursorTarget.x - this.cursorPos.x) * this.cursorLerp;
-    this.cursorPos.y += (this.cursorTarget.y - this.cursorPos.y) * this.cursorLerp;
-
-    const cell = this.getCellAtCursor();
-
-    if (cell !== null && this.cachedCell !== cell) {
-      this.cachedCell = cell;
-      gsap.set(cell, { opacity: 1 });
-      gsap.set(cell, { opacity: 0, delay: this.settings.ttl });
-    }
-
-    requestAnimationFrame(() => this.animateCursor());
-  }
-
-  layout() {
-    this.columns = parseInt(getComputedStyle(this.DOM.el).getPropertyValue("--columns"), 10);
-    this.cellSize = winsize.width / this.columns;
-    this.rows = Math.ceil(winsize.height / this.cellSize);
-    this.cellsTotal = this.rows * this.columns;
-
-    let innerStr = "";
-    this.DOM.inner.innerHTML = "";
-
-    const customColorsAttr = this.DOM.el.getAttribute("data-custom-colors");
-    let customColorsArr;
-    let customColorsTotal = 0;
-
-    if (customColorsAttr) {
-      customColorsArr = customColorsAttr.split(",");
-      customColorsTotal = customColorsArr ? customColorsArr.length : 0;
-    }
-
-    for (let i = 0; i < this.cellsTotal; ++i) {
-      innerStr += customColorsTotal === 0
-        ? '<div class="cursor__inner-box"></div>'
-        : `<div style="transform: scale(${gsap.utils.random(0.5, 2)}); background:${customColorsArr[Math.round(gsap.utils.random(0, customColorsTotal - 1))]}" class="cursor__inner-box"></div>`;
-    }
-
-    this.DOM.inner.innerHTML = innerStr;
-    this.DOM.cells = this.DOM.inner.children;
-  }
-
-  getCellAtCursor() {
-    const columnIndex = Math.floor(this.cursorPos.x / this.cellSize);
-    const rowIndex = Math.floor(this.cursorPos.y / this.cellSize);
-    const cellIndex = rowIndex * this.columns + columnIndex;
-
-    if (cellIndex >= this.cellsTotal || cellIndex < 0) {
-      return null;
-    }
-
-    return this.DOM.cells[cellIndex];
-  }
-}
-
-// Initialize Gooey Cursor
-const cursorEl = document.querySelector(".cursor");
 if (cursorEl) {
-  const goo = new GooCursor(cursorEl);
-
+  let cursorX = 0;
+  let cursorY = 0;
+  let targetX = 0;
+  let targetY = 0;
+  
+  const lerp = (start, end, factor) => start + (end - start) * factor;
+  
+  const animateCursor = () => {
+    cursorX = lerp(cursorX, targetX, 0.15);
+    cursorY = lerp(cursorY, targetY, 0.15);
+    
+    cursorEl.style.left = cursorX + "px";
+    cursorEl.style.top = cursorY + "px";
+    
+    requestAnimationFrame(animateCursor);
+  };
+  
+  window.addEventListener("mousemove", (e) => {
+    targetX = e.clientX;
+    targetY = e.clientY;
+  });
+  
+  // Hover effects for interactive elements
+  const interactiveElements = document.querySelectorAll("a, button, .cv-flip-container");
+  
+  interactiveElements.forEach(el => {
+    el.addEventListener("mouseenter", () => {
+      cursorEl.classList.add("hover");
+    });
+    el.addEventListener("mouseleave", () => {
+      cursorEl.classList.remove("hover");
+    });
+  });
+  
+  animateCursor();
 }
 
 if (tiltPanel) {
@@ -184,7 +106,7 @@ let isDragging = false;
 const cvFlipInner = document.querySelector('.cv-flip-inner');
 const cvFlipContainer = document.querySelector('.cv-flip-container');
 
-const cvOverlay = document.querySelector('.cv-overlay');
+ const cvOverlay = document.querySelector('.cv-overlay');
 
 if (cvFlipContainer && cvFlipInner) {
   let hasDragged = false;
@@ -216,7 +138,7 @@ if (cvFlipContainer && cvFlipInner) {
 
   cvFlipContainer.addEventListener("pointercancel", () => {
     isDragging = false;
-  });
+   });
 
   cvFlipContainer.addEventListener("click", (e) => {
     if (hasDragged) {
@@ -231,36 +153,36 @@ if (cvFlipContainer && cvFlipInner) {
       scrollCont.style.filter = 'blur(8px)';
       headerEl.style.filter = 'blur(8px)';
       footerEl.style.filter = 'blur(8px)';
-      gsap.fromTo(cvOverlay,
-        { opacity: 0, scale: 0.8 },
-        { opacity: 1, scale: 1, duration: 0.5, ease: 'power2.out', onStart: () => {
-            cvOverlay.style.display = 'flex';
-          }
-        });
+     gsap.fromTo(cvOverlay, 
+       { opacity: 0, scale: 0.8 },
+       { opacity: 1, scale: 1, duration: 0.5, ease: 'power2.out', onStart: () => {
+           cvOverlay.style.display = 'flex';
+         }
+       });
     }
-  });
-}
+   });
+ }
 
-if (cvOverlay) {
-  cvOverlay.addEventListener("click", (e) => {
-    if (e.target === cvOverlay) {
-      gsap.to(cvOverlay, {
-        opacity: 0,
-        scale: 0.8,
-        duration: 0.3,
-        ease: 'power2.in',
-        onComplete: () => {
-          cvOverlay.style.display = 'none';
-          document.querySelector('.scroll-container').style.filter = '';
-          document.querySelector('.site-header').style.filter = '';
-          document.querySelector('.site-footer').style.filter = '';
-        }
-      });
-    }
-  });
-}
+ if (cvOverlay) {
+   cvOverlay.addEventListener("click", (e) => {
+     if (e.target === cvOverlay) {
+       gsap.to(cvOverlay, {
+         opacity: 0,
+         scale: 0.8,
+         duration: 0.3,
+         ease: 'power2.in',
+         onComplete: () => {
+           cvOverlay.style.display = 'none';
+           document.querySelector('.scroll-container').style.filter = '';
+           document.querySelector('.site-header').style.filter = '';
+           document.querySelector('.site-footer').style.filter = '';
+         }
+       });
+     }
+   });
+ }
 
-document.addEventListener("keydown", (e) => {
+ document.addEventListener("keydown", (e) => {
    if (e.key === "Escape" && cvOverlay && cvOverlay.style.display === 'flex') {
      gsap.to(cvOverlay, {
        opacity: 0,

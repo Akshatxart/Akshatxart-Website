@@ -67,6 +67,38 @@ body {
   right: 0;
   z-index: 10;
   pointer-events: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 var(--gutter);
+  height: 60px;
+}
+
+.brand {
+  display: none;
+}
+
+.site-nav {
+  display: flex;
+  gap: clamp(24px, 4vw, 48px);
+  align-items: center;
+  pointer-events: auto;
+}
+
+.site-nav a {
+  font-family: "Consolas", "Roboto Mono", monospace;
+  font-size: clamp(0.85rem, 1.2vw, 1rem);
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  color: var(--ink);
+  text-decoration: none;
+  text-transform: lowercase;
+  pointer-events: auto;
+  transition: opacity 0.2s var(--ease);
+}
+
+.site-nav a:hover {
+  opacity: 0.6;
 }
 
 .site-header__logo {
@@ -135,6 +167,7 @@ body {
   width: 450px;
   perspective: 1000px;
   cursor: grab;
+  -webkit-user-select: none;
   user-select: none;
 }
 
@@ -313,16 +346,19 @@ body {
 }
 
 .site-footer {
-  position: relative;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   display: -webkit-box;
   display: -webkit-flex;
   display: -ms-flexbox;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   padding: clamp(20px, 4vw, 40px);
-  margin-top: auto;
+  z-index: 10;
 }
 
 .site-footer__brand {
@@ -332,7 +368,6 @@ body {
   letter-spacing: 0.05em;
   color: var(--ink);
   text-decoration: none;
-  margin-bottom: clamp(8px, 1.5vw, 16px);
 }
 
 .site-footer__brand:hover {
@@ -354,4 +389,43 @@ body {
 
 .site-footer__year:hover {
   opacity: 0.7;
+}
+
+.cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.cursor__inner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--ink);
+  transform: translate(-50%, -50%);
+  transition: width 0.2s var(--ease), height 0.2s var(--ease), background 0.2s var(--ease);
+  mix-blend-mode: difference;
+}
+
+.cursor__inner.hover {
+  width: 80px;
+  height: 80px;
+  background: var(--bg);
+}
+
+.background-video {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
+  z-index: -1;
 }
