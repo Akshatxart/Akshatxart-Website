@@ -57,7 +57,41 @@ body {
   right: 0;
   bottom: 0;
   z-index: 2;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-snap-type: y mandatory;
+}
+
+.page-section {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: clamp(40px, 8vw, 120px) clamp(20px, 4vw, 60px);
+  scroll-snap-align: start;
+}
+
+.page-content {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  max-width: var(--max);
+  margin: 0 auto;
+  gap: clamp(40px, 6vw, 80px);
+  width: 100%;
+}
+
+.page-section:nth-child(2) {
+  justify-content: center;
+}
+
+.page-section:nth-child(2) .page-content {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
 .site-header {
@@ -75,8 +109,9 @@ body {
 }
 
 .brand {
-  display: none;
+  display: block;
 }
+
 
 .site-nav {
   display: flex;
@@ -111,6 +146,23 @@ body {
   width: auto;
   max-width: 100%;
   height: auto;
+}
+
+/* Make the logo visible/positioned like a top-left brand */
+.site-header > a.brand {
+  pointer-events: auto;
+  position: fixed;
+  top: 10px;
+  left: 18px;
+  z-index: 11;
+}
+
+.site-header > a.brand img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  display: block;
+
 }
 
 .grain {
@@ -354,6 +406,44 @@ body {
   transition: transform 0.1s ease;
 }
 
+.about-section__right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.cover-letter-label {
+  font-family: "Consolas", "Roboto Mono", monospace;
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 0.9;
+  margin: 0 0 16px;
+  text-transform: lowercase;
+  color: var(--ink);
+}
+
+.cover-letter-container {
+  width: 450px;
+  perspective: 1000px;
+  cursor: grab;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.cover-letter-image {
+  display: block;
+  width: 100%;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px var(--soft-shadow);
+  transition: transform 0.6s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.cover-letter-container:hover .cover-letter-image {
+  transform: scale(1.02);
+}
+
 @media (max-width: 991px) {
   .about-section__inner {
     flex-direction: column;
@@ -383,12 +473,19 @@ body {
 
 .site-footer__brand {
   font-family: "Consolas", "Roboto Mono", monospace;
-  font-size: clamp(0.8rem, 1.2vw, 1rem);
+  font-size: calc(clamp(0.8rem, 1.2vw, 1rem) * 0.7);
   font-weight: 300;
   letter-spacing: 0.05em;
   color: var(--ink);
   text-decoration: none;
+  transform: translateY(150%);
+
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
 }
+
+
 
 .site-footer__brand:hover {
   opacity: 0.7;
@@ -396,20 +493,30 @@ body {
 
 .site-footer__year {
   font-family: "Consolas", "Roboto Mono", monospace;
-  font-size: clamp(0.8rem, 1.2vw, 1rem);
+  font-size: calc(clamp(0.8rem, 1.2vw, 1rem) * 0.7);
   font-weight: 300;
   letter-spacing: 0.05em;
   color: var(--ink);
   text-decoration: none;
+  transform: translateY(30%);
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
 }
+
+
 
 .site-footer__year .small-c {
   font-weight: 700;
+  font-size: inherit;
+  transform: none;
+  display: inline-block;
 }
 
 .site-footer__year:hover {
   opacity: 0.7;
 }
+
 
 .cursor {
   position: fixed;
@@ -440,6 +547,26 @@ body {
   background: var(--bg);
 }
 
+.cursor__text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translate(-50%, -50%);
+  font-family: "Consolas", "Roboto Mono", monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--ink);
+  text-transform: lowercase;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s var(--ease);
+  white-space: nowrap;
+}
+
+.cursor__text.visible {
+  opacity: 1;
+}
+
 .background-video {
   position: fixed;
   top: 0;
@@ -448,4 +575,5 @@ body {
   height: 100vh;
   object-fit: cover;
   z-index: -1;
+  transition: opacity 0.8s var(--ease);
 }

@@ -3,6 +3,7 @@ const revealItems = document.querySelectorAll(".reveal");
 const tiltPanel = document.querySelector("[data-tilt]");
 const internalLinks = document.querySelectorAll("[data-scroll]");
 const scrollContainer = document.querySelector(".scroll-container");
+const backgroundVideo = document.querySelector(".background-video");
 
 const updateHeader = () => {
   if (scrollContainer) {
@@ -46,8 +47,9 @@ const revealObserver = new IntersectionObserver(
 
 revealItems.forEach((item) => revealObserver.observe(item));
 
-// Circular Cursor
+// Circular Cursor with Text Reveal
 const cursorEl = document.querySelector(".cursor__inner");
+const cursorTextEl = document.querySelector(".cursor__text");
 
 if (cursorEl) {
   let cursorX = 0;
@@ -64,6 +66,11 @@ if (cursorEl) {
     cursorEl.style.left = cursorX + "px";
     cursorEl.style.top = cursorY + "px";
     
+    if (cursorTextEl) {
+      cursorTextEl.style.left = cursorX + "px";
+      cursorTextEl.style.top = cursorY + "px";
+    }
+    
     requestAnimationFrame(animateCursor);
   };
   
@@ -72,15 +79,23 @@ if (cursorEl) {
     targetY = e.clientY;
   });
   
-  // Hover effects for interactive elements
-  const interactiveElements = document.querySelectorAll("a, button, .cv-flip-container");
+  // Hover effects for interactive elements with text reveal
+  const interactiveElements = document.querySelectorAll("a, button, .cv-flip-container, .cover-letter-container");
   
   interactiveElements.forEach(el => {
     el.addEventListener("mouseenter", () => {
       cursorEl.classList.add("hover");
+      if (cursorTextEl) {
+        const linkText = el.textContent.trim().toLowerCase();
+        cursorTextEl.textContent = linkText;
+        cursorTextEl.classList.add("visible");
+      }
     });
     el.addEventListener("mouseleave", () => {
       cursorEl.classList.remove("hover");
+      if (cursorTextEl) {
+        cursorTextEl.classList.remove("visible");
+      }
     });
   });
   
@@ -199,12 +214,123 @@ if (cvFlipContainer && cvFlipInner) {
    }
  });
 
+// Animation functions
+const runTitleGlitch = () => {
+  const title = document.querySelector('.about-section__title');
+  if (!title) return;
+  
+  const originalText = title.textContent;
+  const glitchChars = ['а', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '@', '#', '$', '%', '&', '*'];
+  
+  const weights = [700, 800, 900, 800, 700];
+  
+  const steps = 10;
+  const tl = gsap.timeline();
+
+  const scrambleText = () => {
+    let scrambled = '';
+    for (let i = 0; i < originalText.length; i++) {
+      if (Math.random() < 0.25) {
+        scrambled += glitchChars[Math.floor(Math.random() * glitchChars.length)];
+      } else {
+        scrambled += originalText[i];
+      }
+    }
+    title.textContent = scrambled;
+  };
+
+  for (let i = 0; i < steps; i++) {
+    tl.to(title, {
+      fontWeight: weights[Math.floor(Math.random() * weights.length)],
+      duration: 0.035,
+      ease: 'power2.out',
+      onUpdate: scrambleText
+    });
+  }
+
+  tl.to(title, {
+    fontWeight: 800,
+    textTransform: 'lowercase',
+    duration: 0.35,
+    ease: 'power2.out',
+    onComplete: () => {
+      title.textContent = originalText;
+    }
+  });
+};
+
+const runCVAnimation = () => {
+  const cvLabel = document.querySelector('.cv-label');
+  const cvContainer = document.querySelector('.cv-flip-container');
+  
+  if (cvLabel) {
+    gsap.from(cvLabel, {
+      opacity: 0,
+      y: 30,
+      duration: 0.6,
+      ease: 'power2.out'
+    });
+  }
+  
+  if (cvContainer) {
+    gsap.from(cvContainer, {
+      opacity: 0,
+      y: 40,
+      scale: 0.95,
+      duration: 0.8,
+      delay: 0.1,
+      ease: 'power2.out'
+    });
+  }
+};
+
+const runCoverLetterAnimation = () => {
+  const coverLetterLabel = document.querySelector('.cover-letter-label');
+  const coverLetterContainer = document.querySelector('.cover-letter-container');
+  
+  if (coverLetterLabel) {
+    gsap.from(coverLetterLabel, {
+      opacity: 0,
+      y: 30,
+      duration: 0.6,
+      delay: 0.2,
+      ease: 'power2.out'
+    });
+  }
+  
+  if (coverLetterContainer) {
+    gsap.from(coverLetterContainer, {
+      opacity: 0,
+      y: 40,
+      scale: 0.95,
+      duration: 0.8,
+      delay: 0.3,
+      ease: 'power2.out'
+    });
+  }
+};
+
+const runDescriptionZoomOut = () => {
+  const bioParagraphs = document.querySelectorAll('.about-section__bio p');
+  if (!bioParagraphs.length) return;
+  
+  gsap.from(bioParagraphs, 
+    { 
+      scale: 1.08, 
+      opacity: 0,
+      y: 12,
+      duration: 0.7, 
+      stagger: 0.1, 
+      ease: 'power2.out' 
+    }
+  );
+};
+
 updateHeader();
 if (scrollContainer) {
   let lastScrollTime = 0;
   const scrollCooldown = 800; // ms
   const fadeBgOverlay = document.querySelector(".fade-bg-overlay");
-  const aboutInner = document.querySelector(".about-section__inner");
   const asciiOverlay = document.querySelector(".ascii-transition-overlay");
   const asciiChars = [" ", ".", ":", "-", "=", "+", "*", "#", "%", "@", "█"];
 
@@ -235,30 +361,41 @@ if (scrollContainer) {
 
   const handleScroll = () => {
     updateHeader();
-    if (fadeBgOverlay && aboutInner) {
+    if (fadeBgOverlay) {
       const scrollTop = scrollContainer.scrollTop;
       const height = window.innerHeight;
       const progress = Math.min(Math.max(scrollTop / height, 0), 1);
 
       fadeBgOverlay.style.opacity = progress;
-      aboutInner.style.opacity = progress;
-      
-      if (asciiOverlay) {
-        const density = 1 - 2 * Math.abs(progress - 0.5);
-        asciiOverlay.style.opacity = Math.max(0, density);
-        
-        if (density > 0.05) {
-          asciiOverlay.textContent = generateASCIIFrame(density);
-        } else {
-          asciiOverlay.textContent = "";
-        }
-      }
+    }
+    
+    // Fade out background video when scrolling to page2
+    if (backgroundVideo) {
+      const scrollTop = scrollContainer.scrollTop;
+      const height = window.innerHeight;
+      const videoOpacity = 1 - Math.min(Math.max(scrollTop / height, 0), 1);
+      backgroundVideo.style.opacity = videoOpacity;
     }
   };
 
-  const aboutSection = document.querySelector('.about-section-full');
-  if (aboutSection) {
-    const aboutObserver = new IntersectionObserver((entries) => {
+  // Page 1 animations
+  const page1 = document.querySelector('#page1');
+  if (page1) {
+    const page1Observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          runCVAnimation();
+          runCoverLetterAnimation();
+        }
+      });
+    }, { threshold: 0.3 });
+    page1Observer.observe(page1);
+  }
+
+  // Page 2 animations
+  const page2 = document.querySelector('#page2');
+  if (page2) {
+    const page2Observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           runTitleGlitch();
@@ -266,68 +403,8 @@ if (scrollContainer) {
         }
       });
     }, { threshold: 0.3 });
-    aboutObserver.observe(aboutSection);
+    page2Observer.observe(page2);
   }
-
-  const runTitleGlitch = () => {
-    const title = document.querySelector('.about-section__title');
-    if (!title) return;
-    
-    const originalText = title.textContent;
-    const glitchChars = ['а', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '@', '#', '$', '%', '&', '*'];
-    
-    const weights = [700, 800, 900, 800, 700];
-    
-const steps = 10;
-    const tl = gsap.timeline();
-
-const scrambleText = () => {
-      let scrambled = '';
-      for (let i = 0; i < originalText.length; i++) {
-        if (Math.random() < 0.25) {
-          scrambled += glitchChars[Math.floor(Math.random() * glitchChars.length)];
-        } else {
-          scrambled += originalText[i];
-        }
-      }
-      title.textContent = scrambled;
-    };
-
-    for (let i = 0; i < steps; i++) {
-      tl.to(title, {
-        fontWeight: weights[Math.floor(Math.random() * weights.length)],
-        duration: 0.035,
-        ease: 'power2.out',
-        onUpdate: scrambleText
-      });
-    }
-
-    tl.to(title, {
-      fontWeight: 800,
-      textTransform: 'lowercase',
-      duration: 0.35,
-      ease: 'power2.out',
-      onComplete: () => {
-        title.textContent = originalText;
-      }
-    });
-  };
-
-  const runDescriptionZoomOut = () => {
-    const bioParagraphs = document.querySelectorAll('.about-section__bio p');
-    if (!bioParagraphs.length) return;
-    
-    gsap.from(bioParagraphs, 
-      { 
-        scale: 1.08, 
-        opacity: 0,
-        y: 12,
-        duration: 0.7, 
-        stagger: 0.1, 
-        ease: 'power2.out' 
-      }
-    );
-  };
 
   scrollContainer.addEventListener("scroll", handleScroll, { passive: true });
   // Using CSS scroll snapping instead of JavaScript-based scrolling for better performance and reliability
