@@ -75,10 +75,27 @@
 
 <div class="fade-bg-overlay" aria-hidden="true"></div>
 <div class="ascii-transition-overlay" aria-hidden="true"></div>
-<div class="cv-overlay" aria-hidden="true">
-  <div class="cv-overlay__inner">
-    <a href="assets/CV - Curriculum Vitae - Akshat Singh.pdf" class="cv-download-icon" download title="Download CV">↓</a>
-    <iframe src="assets/CV - Curriculum Vitae - Akshat Singh.pdf#toolbar=0" class="cv-overlay__pdf" type="application/pdf"></iframe>
+
+<!-- Full-screen premium document viewer (CV + Cover Letter) -->
+<div class="doc-viewer" id="docViewer" aria-hidden="true">
+  <div class="doc-viewer__backdrop" data-doc-viewer-backdrop></div>
+
+  <div class="doc-viewer__panel" role="dialog" aria-modal="true" aria-label="Document viewer">
+    <button class="doc-viewer__close" type="button" data-doc-viewer-close aria-label="Close document viewer">
+      ×
+    </button>
+
+    <a class="doc-viewer__download" href="#" download data-doc-viewer-download aria-label="Download document">
+      Download
+    </a>
+
+    <iframe
+      class="doc-viewer__pdf"
+      title="Document preview"
+      data-doc-viewer-pdf
+      src=""
+      type="application/pdf"
+    ></iframe>
   </div>
 </div>
 
@@ -89,18 +106,18 @@
 <section id="page1" class="page-section">
   <div class="page-content">
     <div class="about-section__left">
-      <h2 class="cv-label reveal">cv</h2>
-      <div class="cv-flip-container reveal">
+<h2 class="cv-label reveal" data-doc="cv">cv</h2>
+       <div class="cv-flip-container reveal" data-doc="cv" role="button" tabindex="0" aria-label="Open CV document">
         <div class="cv-flip-inner">
-          <img src="assets/CV - Curriculum Vitae - Akshat Singh.png" alt="CV - Curriculum Vitae page 1" class="cv-page1" data-cv-open />
-          <img src="assets/CV Page 2.png" alt="CV - Curriculum Vitae page 2" class="cv-page2" />
+<img src="assets/CV - Curriculum Vitae - Akshat Singh- Page 1.png" alt="CV - Curriculum Vitae page 1" class="cv-page1" data-doc="cv" />
+          <img src="assets/CV - Curriculum Vitae - Akshat Singh- Page 2_1.png" alt="CV - Curriculum Vitae page 2" class="cv-page2" data-doc="cv" />
         </div>
       </div>
     </div>
     <div class="about-section__right">
-      <h2 class="cover-letter-label reveal">cover letter</h2>
-      <div class="cover-letter-container reveal">
-        <img src="assets/Cover Letter - Akshat Singh.png" alt="Cover Letter - Akshat Singh" class="cover-letter-image" />
+<h2 class="cover-letter-label reveal" data-doc="cover-letter">cover letter</h2>
+       <div class="cover-letter-container reveal" data-doc="cover-letter" role="button" tabindex="0" aria-label="Open cover letter document">
+        <img src="assets/Cover Letter - Akshat Singh.png" alt="Cover Letter - Akshat Singh" class="cover-letter-image" data-doc="cover-letter" />
       </div>
     </div>
   </div>
@@ -109,12 +126,35 @@
 <section id="page2" class="page-section">
   <div class="page-content">
     <h1 class="about-section__title reveal">about</h1>
+
+    <p class="about-section__tagline reveal">
+      <span class="tagline-line tagline-line--1">A 3D and visual designer</span>
+      <span class="tagline-line tagline-line--2">crafting digital experiences</span>
+      <span class="tagline-line tagline-line--3">through motion, design, and storytelling.</span>
+    </p>
+
+    <!-- Side thumbnails (CV left / Cover letter right) -->
+<div class="about-section__side about-section__side--left reveal">
+       <h3 class="about-side-label">cv</h3>
+       <img data-tilt-cursor src="assets/CV - Curriculum Vitae - Akshat Singh- Page 1.png" alt="CV thumbnail" data-doc="cv" />
+     </div>
+
+<div class="about-section__side about-section__side--right reveal">
+      <h3 class="about-side-label">cover letter</h3>
+      <img data-tilt-cursor src="assets/Cover Letter - Akshat Singh.png" alt="Cover letter thumbnail" data-doc="cover-letter" />
+    </div>
+
+
+
     <div class="about-section__bio">
-      <p class="reveal">3D Generalist & Multimedia Artist with 5+ years of experience in animation, motion graphics, and visual design, freelancing since 2019. Specialized in 3D/2D motion design with a strong foundation in graphic design, branding, and visual communication.</p>
-      <p class="reveal">Experienced in managing end-to-end production pipelines, from 3D modeling and animation to rendering and final delivery, across sports, luxury, and music industries. Currently working as a Senior Motion Graphic Designer, creating motion graphics, 2D animation, and visual design.</p>
+
+      <p class="reveal">
+        Experienced in managing end-to-end production pipelines, from 3D modeling and animation to rendering and final delivery, across sports, luxury, and music industries. Currently working as a Senior Motion Graphic Designer, creating motion graphics, 2D animation, and visual design.
+      </p>
     </div>
   </div>
 </section>
+
      </div>
 
 

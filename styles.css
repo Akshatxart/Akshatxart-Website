@@ -91,8 +91,93 @@ body {
 .page-section:nth-child(2) .page-content {
   flex-direction: column;
   align-items: center;
+  justify-content: flex-start;
   text-align: center;
 }
+
+/* Hard override for the About section (page2) */
+#page2.page-section .page-content {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+  min-height: 100vh;
+}
+
+#page2.page-section .about-section__title,
+#page2.page-section .about-section__tagline,
+#page2.page-section .about-section__bio {
+  text-align: center;
+  width: 100%;
+}
+
+
+/* Keep the bio paragraph perfectly centered */
+#page2.page-section .about-section__bio {
+  margin: 0;
+}
+
+/* Add side columns (CV thumbnail left / cover letter right) while keeping bio centered */
+#page2.page-section .about-section__title,
+#page2.page-section .about-section__tagline,
+#page2.page-section .about-section__bio {
+  position: relative;
+  z-index: 2;
+}
+
+#page2.page-section .about-section__side {
+  position: absolute;
+  top: 42%;
+  transform: translateY(-50%) !important;
+  z-index: 10;
+  width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  pointer-events: auto;
+
+  /* Override `.reveal` so the thumbnails are not stuck invisible */
+  opacity: 1 !important;
+}
+
+.about-side-label {
+  margin: 0;
+  font-family: "Consolas", "Roboto Mono", monospace;
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-transform: lowercase;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+
+
+
+
+#page2.page-section .about-section__side--left {
+  left: clamp(28px, 5vw, 80px);
+}
+
+#page2.page-section .about-section__side--right {
+  right: clamp(28px, 5vw, 80px);
+}
+
+
+
+#page2.page-section .about-section__side img {
+  width: min(360px, 28vw);
+  height: auto;
+  max-height: 550px;
+  object-fit: cover;
+  border-radius: 2.5px;
+  box-shadow: 0 10px 40px rgba(10, 10, 10, 0.25);
+  position: relative;
+  z-index: 4;
+}
+
+
+
 
 .site-header {
   position: fixed;
@@ -241,6 +326,7 @@ body {
   cursor: grab;
   -webkit-user-select: none;
   user-select: none;
+  pointer-events: auto;
 }
 
 .cv-flip-container:active {
@@ -289,7 +375,8 @@ body {
   opacity: 1;
 }
 
-.cv-label {
+.cv-label,
+.cover-letter-label {
   font-family: "Consolas", "Roboto Mono", monospace;
   font-size: clamp(1.8rem, 3vw, 2.4rem);
   font-weight: 700;
@@ -298,6 +385,7 @@ body {
   margin: 0 0 16px;
   text-transform: lowercase;
   color: var(--ink);
+  cursor: pointer;
 }
 
 .cv-overlay {
@@ -353,6 +441,16 @@ body {
   background: white;
 }
 
+/* Cursor tilt on hover (CV + cover letter thumbnails) */
+[data-tilt-cursor] {
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: transform 120ms ease;
+  transform: perspective(800px) rotateX(0deg) rotateY(0deg);
+}
+
+
+
 .about-section__title {
   font-family: "Consolas", "Roboto Mono", monospace;
   font-size: clamp(4rem, 9vw, 8rem);
@@ -364,11 +462,55 @@ body {
   color: var(--ink);
 }
 
+.about-section__tagline {
+  font-family: "Consolas", "Roboto Mono", monospace;
+  /* small-to-big lines look */
+  font-size: clamp(0.82rem, 1.2vw, 1.02rem);
+  line-height: 1.55;
+  color: var(--ink);
+
+  /* spacing between heading and tagline (make it tighter) */
+  margin: 0 !important;
+  margin-top: -6px !important;
+
+  font-weight: 400;
+  text-align: center;
+
+  /* normal flow */
+  display: block;
+  transform: none !important;
+  position: static !important;
+}
+
+.about-section__tagline br {
+  content: "";
+}
+
+/* small-to-big multiline look under About */
+.tagline-line {
+  display: block;
+}
+
+.tagline-line--1 {
+  font-size: clamp(0.78rem, 1.08vw, 0.98rem);
+}
+
+.tagline-line--2 {
+  font-size: clamp(0.85rem, 1.18vw, 1.06rem);
+}
+
+.tagline-line--3 {
+  font-size: clamp(0.92rem, 1.30vw, 1.14rem);
+}
+
+
+
 .about-section__bio {
   margin-bottom: clamp(48px, 6vw, 64px);
 }
 
 .about-section__bio p {
+
   font-family: "Consolas", "Roboto Mono", monospace;
   font-size: clamp(1rem, 1.6vw, 1.35rem);
   line-height: 1.45;
@@ -411,17 +553,6 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-
-.cover-letter-label {
-  font-family: "Consolas", "Roboto Mono", monospace;
-  font-size: clamp(1.8rem, 3vw, 2.4rem);
-  font-weight: 700;
-  letter-spacing: -0.04em;
-  line-height: 0.9;
-  margin: 0 0 16px;
-  text-transform: lowercase;
-  color: var(--ink);
 }
 
 .cover-letter-container {
@@ -478,12 +609,15 @@ body {
   letter-spacing: 0.05em;
   color: var(--ink);
   text-decoration: none;
-  transform: translateY(150%);
+  transform: translateY(0);
+
 
   display: inline-flex;
+
   align-items: center;
   line-height: 1;
 }
+
 
 
 
@@ -498,11 +632,12 @@ body {
   letter-spacing: 0.05em;
   color: var(--ink);
   text-decoration: none;
-  transform: translateY(30%);
+  transform: translateY(0);
   display: inline-flex;
   align-items: center;
   line-height: 1;
 }
+
 
 
 
@@ -576,4 +711,152 @@ body {
   object-fit: cover;
   z-index: -1;
   transition: opacity 0.8s var(--ease);
+}
+
+/* ==============================
+   Full-screen premium document viewer
+   ============================== */
+.doc-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  opacity: 0;
+  transform: scale(0.98);
+  transition: opacity 240ms var(--ease), transform 240ms var(--ease);
+
+  pointer-events: none;
+  background: rgba(5, 5, 5, 0.5);
+  -webkit-backdrop-filter: blur(8px) brightness(1.05);
+  backdrop-filter: blur(8px) brightness(1.05);
+}
+
+.doc-viewer[aria-hidden="false"] {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+.doc-viewer__panel {
+  position: relative;
+  width: min(1120px, 92vw);
+  height: min(840px, 88vh);
+  border-radius: 10px;
+  overflow: hidden;
+
+  background: rgba(248, 248, 243, 0.92);
+  box-shadow: 0 24px 90px rgba(0, 0, 0, 0.45);
+
+  display: flex;
+  flex-direction: column;
+}
+
+.doc-viewer__backdrop {
+  position: absolute;
+  inset: 0;
+}
+
+.doc-viewer__close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  z-index: 5;
+
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid rgba(10, 10, 10, 0.16);
+  border-radius: 999px;
+
+  font-family: "Consolas", "Roboto Mono", monospace;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--ink);
+
+  background: rgba(255, 255, 255, 0.65);
+  cursor: pointer;
+
+  transition: transform 180ms var(--ease), background 180ms var(--ease), opacity 180ms var(--ease);
+}
+
+.doc-viewer__close:hover {
+  transform: scale(1.06);
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.doc-viewer__close:active {
+  transform: scale(0.98);
+}
+
+.doc-viewer__download {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  z-index: 5;
+
+  padding: 10px 14px;
+  border-radius: 999px;
+
+  font-family: "Consolas", "Roboto Mono", monospace;
+  font-size: 0.95rem;
+  font-weight: 600;
+
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(10, 10, 10, 0.14);
+  color: var(--ink);
+  text-decoration: none;
+
+  transition: transform 180ms var(--ease), background 180ms var(--ease);
+}
+
+.doc-viewer__download:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.doc-viewer__download:active {
+  transform: translateY(0px) scale(0.98);
+}
+
+.doc-viewer__pdf {
+  width: 100%;
+  height: 100%;
+  border: 0;
+
+  /* Keep the PDF centered; avoid layout shifts */
+  background: white;
+}
+
+/* Prevent scrolling/layout interactions while viewer is open */
+body.doc-viewer-open {
+  overflow: hidden;
+}
+
+/* Make sure hidden/visible transitions feel premium on mobile */
+@media (max-width: 520px) {
+  .doc-viewer__panel {
+    width: 94vw;
+    height: 90vh;
+    border-radius: 10px;
+  }
+
+  .doc-viewer__close {
+    top: 10px;
+    right: 10px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .doc-viewer__download {
+    top: 10px;
+    left: 10px;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+  }
 }

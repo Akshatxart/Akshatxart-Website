@@ -115,14 +115,145 @@ if (tiltPanel) {
    });
  }
 
+// Cursor tilt on thumbnails (CV + cover letter)
+const tiltCursorTargets = document.querySelectorAll("[data-tilt-cursor]");
+
+tiltCursorTargets.forEach((el) => {
+  el.addEventListener("pointermove", (event) => {
+    const rect = el.getBoundingClientRect();
+    const px = (event.clientX - rect.left) / rect.width; // 0..1
+    const py = (event.clientY - rect.top) / rect.height; // 0..1
+    const x = px - 0.5;
+    const y = py - 0.5;
+
+    // Use translateZ(0) to ensure the transform is applied visually
+    el.style.transform = `perspective(800px) translateZ(0) rotateY(${x * 10}deg) rotateX(${y * -10}deg) scale(1.01)`;
+  });
+
+  el.addEventListener("pointerleave", () => {
+    el.style.transform = "perspective(800px) rotateX(0deg) rotateY(0deg)";
+  });
+});
+
+
+
+
+
+/* ==============================
+   In-site full-screen document viewer
+   ============================== */
+const docViewer = document.getElementById('docViewer');
+const docBackdrop = document.querySelector('[data-doc-viewer-backdrop]');
+const docCloseBtn = document.querySelector('[data-doc-viewer-close]');
+const docDownloadA = document.querySelector('[data-doc-viewer-download]');
+const docPdf = document.querySelector('[data-doc-viewer-pdf]');
+const docTriggers = document.querySelectorAll('[data-doc]');
+
+const pdfMap = {
+  'cv': {
+    pdfUrl: 'assets/CV - Curriculum Vitae - Akshat Singh.pdf',
+    filename: 'CV - Curriculum Vitae - Akshat Singh.pdf'
+  },
+  'cover-letter': {
+    pdfUrl: 'assets/Cover Letter - Akshat Singh.pdf',
+    filename: 'Cover Letter - Akshat Singh.pdf'
+  }
+};
+
+let lastScrollTop = 0;
+let lastActiveElement = null;
+
+let backgroundInertTargets = [];
+let backgroundPrevPointerEvents = new Map();
+let backgroundPrevAriaHidden = new Map();
+
+const setBackgroundInert = (inert) => {
+  if (!docViewer) return;
+
+  const all = Array.from(document.body.children);
+  const viewerRoot = docViewer;
+
+  // Exclude viewer + its children from being disabled.
+  const targets = all.filter((el) => !viewerRoot.contains(el) && el !== viewerRoot);
+
+  if (inert) {
+    // Capture previous state only once per open.
+    backgroundInertTargets = targets;
+
+    backgroundPrevPointerEvents = new Map();
+    backgroundPrevAriaHidden = new Map();
+
+    targets.forEach((el) => {
+      backgroundPrevPointerEvents.set(el, el.style.pointerEvents);
+      backgroundPrevAriaHidden.set(el, el.getAttribute('aria-hidden'));
+
+      el.setAttribute('aria-hidden', 'true');
+      el.style.pointerEvents = 'none';
+    });
+  } else {
+    // Restore previous state.
+    backgroundInertTargets.forEach((el) => {
+      const prevPe = backgroundPrevPointerEvents.get(el);
+      const prevAria = backgroundPrevAriaHidden.get(el);
+
+      if (prevPe === undefined) {
+        el.style.pointerEvents = '';
+      } else {
+        el.style.pointerEvents = prevPe;
+      }
+
+      if (prevAria === null || prevAria === undefined) {
+        el.removeAttribute('aria-hidden');
+      } else {
+        el.setAttribute('aria-hidden', prevAria);
+      }
+    });
+
+    backgroundInertTargets = [];
+    backgroundPrevPointerEvents.clear();
+    backgroundPrevAriaHidden.clear();
+  }
+};
+
+const openDoc = (docKey) => {
+  if (!docViewer || !docPdf || !docDownloadA) return;
+
+  const doc = pdfMap[docKey];
+  if (!doc) return;
+
+  const scrollContainer = document.querySelector('.scroll-container');
+  if (scrollContainer) lastScrollTop = scrollContainer.scrollTop;
+
+  lastActiveElement = document.activeElement;
+
+  // Load iframe with toolbar hidden (as much as supported)
+  const toolbarSafeSrc = `${doc.pdfUrl}#toolbar=0&navpanes=0&scrollbar=0`;
+  docPdf.src = toolbarSafeSrc;
+
+  // Configure download with original filename
+  // Using direct link preserves original filename via download attribute.
+  docDownloadA.href = doc.pdfUrl;
+  docDownloadA.download = doc.filename;
+
+  // Show viewer
+  docViewer.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('doc-viewer-open');
+  setBackgroundInert(true);
+
+  // Focus close for accessibility
+  if (docCloseBtn) docCloseBtn.focus({ preventScroll: true });
+};
+
 let isFlipped = false;
 let dragStartX = 0;
 let isDragging = false;
 const cvFlipInner = document.querySelector('.cv-flip-inner');
 const cvFlipContainer = document.querySelector('.cv-flip-container');
 
- const cvOverlay = document.querySelector('.cv-overlay');
-
+/**
+ * CV flip interaction is still preserved.
+ * Document opening is handled by the full-screen doc viewer below (data-doc).
+ */
 if (cvFlipContainer && cvFlipInner) {
   let hasDragged = false;
 
@@ -149,70 +280,111 @@ if (cvFlipContainer && cvFlipInner) {
 
   cvFlipContainer.addEventListener("pointerup", () => {
     isDragging = false;
+    hasDragged = false;
   });
 
   cvFlipContainer.addEventListener("pointercancel", () => {
     isDragging = false;
-   });
+    hasDragged = false;
+  });
 
+  // Click handler for CV - opens CV PDF
   cvFlipContainer.addEventListener("click", (e) => {
+    // Only prevent if we actually dragged significantly
     if (hasDragged) {
-      e.stopImmediatePropagation();
+      hasDragged = false;
       return;
     }
-    const scrollCont = document.querySelector('.scroll-container');
-    const headerEl = document.querySelector('.site-header');
-    const footerEl = document.querySelector('.site-footer');
+    e.preventDefault();
+    openDoc("cv");
+  });
+}
 
-    if (cvOverlay) {
-      scrollCont.style.filter = 'blur(8px)';
-      headerEl.style.filter = 'blur(8px)';
-      footerEl.style.filter = 'blur(8px)';
-     gsap.fromTo(cvOverlay, 
-       { opacity: 0, scale: 0.8 },
-       { opacity: 1, scale: 1, duration: 0.5, ease: 'power2.out', onStart: () => {
-           cvOverlay.style.display = 'flex';
-         }
-       });
+// Also handle clicks on CV label
+const cvLabel = document.querySelector('.cv-label[data-doc="cv"]');
+if (cvLabel) {
+  cvLabel.addEventListener("click", (e) => {
+    e.preventDefault();
+    openDoc("cv");
+  });
+}
+
+const closeDoc = () => {
+  if (!docViewer) return;
+
+  docViewer.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('doc-viewer-open');
+  setBackgroundInert(false);
+
+  // Restore scroll position
+  const scrollContainer = document.querySelector('.scroll-container');
+  if (scrollContainer) scrollContainer.scrollTop = lastScrollTop;
+
+  // Keep iframe src to avoid re-download; but remove focus trap
+  if (lastActiveElement && typeof lastActiveElement.focus === 'function') {
+    lastActiveElement.focus({ preventScroll: true });
+  }
+};
+
+/**
+ * Open on triggers (delegated).
+ */
+docTriggers.forEach((el) => {
+  el.addEventListener("click", (e) => {
+    e.preventDefault();
+    const key = el.getAttribute("data-doc");
+    openDoc(key);
+  });
+
+  // keyboard accessibility
+  el.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      const key = el.getAttribute("data-doc");
+      openDoc(key);
     }
-   });
- }
+  });
+});
 
- if (cvOverlay) {
-   cvOverlay.addEventListener("click", (e) => {
-     if (e.target === cvOverlay) {
-       gsap.to(cvOverlay, {
-         opacity: 0,
-         scale: 0.8,
-         duration: 0.3,
-         ease: 'power2.in',
-         onComplete: () => {
-           cvOverlay.style.display = 'none';
-           document.querySelector('.scroll-container').style.filter = '';
-           document.querySelector('.site-header').style.filter = '';
-           document.querySelector('.site-footer').style.filter = '';
-         }
-       });
-     }
-   });
- }
+// HARD fallback: capture-phase click handler for CV, ensuring it opens even if flip/tilt layers stop bubbling.
+document.addEventListener(
+  "click",
+  (e) => {
+    try {
+      const target = e.target;
+      const closestCv = target?.closest?.(
+        '.cv-flip-container[data-doc="cv"], .cv-page1[data-doc="cv"], .cv-page2[data-doc="cv"]'
+      );
+      if (!closestCv) return;
+      openDoc("cv");
+    } catch (_) {
+      // no-op
+    }
+  },
+  true
+);
 
- document.addEventListener("keydown", (e) => {
-   if (e.key === "Escape" && cvOverlay && cvOverlay.style.display === 'flex') {
-     gsap.to(cvOverlay, {
-       opacity: 0,
-       scale: 0.8,
-       duration: 0.3,
-       ease: 'power2.in',
-       onComplete: () => {
-         cvOverlay.style.display = 'none';
-         document.querySelector('.scroll-container').style.filter = '';
-         document.querySelector('.site-header').style.filter = '';
-         document.querySelector('.site-footer').style.filter = '';
-       }
-     });
-   }
- });
+// Close handlers
+if (docCloseBtn) {
+  docCloseBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    closeDoc();
+  });
+}
+
+if (docBackdrop) {
+  docBackdrop.addEventListener('click', (e) => {
+    // only close when clicking the backdrop itself
+    e.preventDefault();
+    closeDoc();
+  });
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && docViewer && docViewer.getAttribute('aria-hidden') === 'false') {
+    closeDoc();
+  }
+});
 
 // Animation functions
 const runTitleGlitch = () => {
@@ -224,13 +396,14 @@ const runTitleGlitch = () => {
   
   const weights = [700, 800, 900, 800, 700];
   
-  const steps = 10;
+  const steps = 5;
   const tl = gsap.timeline();
 
   const scrambleText = () => {
+
     let scrambled = '';
     for (let i = 0; i < originalText.length; i++) {
-      if (Math.random() < 0.25) {
+      if (Math.random() < 0.15) {
         scrambled += glitchChars[Math.floor(Math.random() * glitchChars.length)];
       } else {
         scrambled += originalText[i];
@@ -239,14 +412,16 @@ const runTitleGlitch = () => {
     title.textContent = scrambled;
   };
 
-  for (let i = 0; i < steps; i++) {
-    tl.to(title, {
-      fontWeight: weights[Math.floor(Math.random() * weights.length)],
-      duration: 0.035,
-      ease: 'power2.out',
-      onUpdate: scrambleText
-    });
-  }
+  // Scrambling/glitch effect disabled (requested)
+  // for (let i = 0; i < steps; i++) {
+  //   tl.to(title, {
+  //     fontWeight: weights[Math.floor(Math.random() * weights.length)],
+  //     duration: 0.6,
+  //     ease: 'power2.out',
+  //     onUpdate: scrambleText
+  //   });
+  // }
+
 
   tl.to(title, {
     fontWeight: 800,
