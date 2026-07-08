@@ -386,6 +386,7 @@ body {
   text-transform: lowercase;
   color: var(--ink);
   cursor: pointer;
+  pointer-events: auto;
 }
 
 .cv-overlay {
@@ -561,6 +562,7 @@ body {
   cursor: grab;
   -webkit-user-select: none;
   user-select: none;
+  pointer-events: auto;
 }
 
 .cover-letter-image {
@@ -714,7 +716,7 @@ body {
 }
 
 /* ==============================
-   Full-screen premium document viewer
+   Document viewer (CV + Cover Letter)
    ============================== */
 .doc-viewer {
   position: fixed;
@@ -723,114 +725,284 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-
-  opacity: 0;
-  transform: scale(0.98);
-  transition: opacity 240ms var(--ease), transform 240ms var(--ease);
-
   pointer-events: none;
-  background: rgba(5, 5, 5, 0.5);
-  -webkit-backdrop-filter: blur(8px) brightness(1.05);
-  backdrop-filter: blur(8px) brightness(1.05);
+  /* Closing transition (no delay) */
+  transition: opacity 260ms cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
 }
 
 .doc-viewer[aria-hidden="false"] {
-  opacity: 1;
-  transform: scale(1);
   pointer-events: auto;
+  opacity: 1;
+  /* Opening transition */
+  transition: opacity 100ms ease-out;
 }
 
-.doc-viewer__panel {
-  position: relative;
-  width: min(1120px, 92vw);
-  height: min(840px, 88vh);
-  border-radius: 10px;
-  overflow: hidden;
-
-  background: rgba(248, 248, 243, 0.92);
-  box-shadow: 0 24px 90px rgba(0, 0, 0, 0.45);
-
-  display: flex;
-  flex-direction: column;
-}
-
+/* Backdrop — blur fades in via opacity */
 .doc-viewer__backdrop {
   position: absolute;
   inset: 0;
-}
-
-.doc-viewer__close {
-  position: absolute;
-  top: 12px;
-  right: 14px;
-  z-index: 5;
-
-  width: 42px;
-  height: 42px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  border: 1px solid rgba(10, 10, 10, 0.16);
-  border-radius: 999px;
-
-  font-family: "Consolas", "Roboto Mono", monospace;
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: var(--ink);
-
   background: rgba(255, 255, 255, 0.65);
-  cursor: pointer;
-
-  transition: transform 180ms var(--ease), background 180ms var(--ease), opacity 180ms var(--ease);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+  opacity: 0;
+  transition: opacity 260ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.doc-viewer__close:hover {
-  transform: scale(1.06);
-  background: rgba(255, 255, 255, 0.85);
+.doc-viewer[aria-hidden="false"] .doc-viewer__backdrop {
+  opacity: 1;
+  transition: opacity 340ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.doc-viewer__close:active {
-  transform: scale(0.98);
+/* Panel — scales up + slides up + fades in */
+.doc-viewer__panel {
+  position: relative;
+  z-index: 1;
+  width: min(900px, 90vw);
+  height: min(800px, 86vh);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+  color-scheme: light;
+  box-shadow:
+    0 40px 120px rgba(0, 0, 0, 0.18),
+    0 12px 40px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+
+  /* Closing: faster, no delay */
+  transform: scale(0.94) translateY(16px);
+  opacity: 0;
+  transition:
+    transform 240ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.doc-viewer[aria-hidden="false"] .doc-viewer__panel {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+  /* Opening: slightly longer, small delay to sync with backdrop */
+  transition:
+    transform 380ms cubic-bezier(0.22, 1, 0.36, 1) 60ms,
+    opacity 300ms cubic-bezier(0.22, 1, 0.36, 1) 60ms;
 }
 
 .doc-viewer__download {
   position: absolute;
-  top: 12px;
-  left: 14px;
+  top: 14px;
+  right: 14px;
   z-index: 5;
 
-  padding: 10px 14px;
+  padding: 10px 18px;
   border-radius: 999px;
 
   font-family: "Consolas", "Roboto Mono", monospace;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 600;
 
-  background: rgba(255, 255, 255, 0.65);
-  border: 1px solid rgba(10, 10, 10, 0.14);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(10, 10, 10, 0.12);
   color: var(--ink);
   text-decoration: none;
+  backdrop-filter: blur(8px);
 
   transition: transform 180ms var(--ease), background 180ms var(--ease);
 }
 
 .doc-viewer__download:hover {
   transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.9);
+  background: #fff;
 }
 
 .doc-viewer__download:active {
-  transform: translateY(0px) scale(0.98);
+  transform: scale(0.97);
 }
 
-.doc-viewer__pdf {
+.doc-viewer__pdf-scroll {
+  flex: 1;
   width: 100%;
-  height: 100%;
-  border: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+  background: #f5f5f5;
+  position: relative;
+  /* Hide native scrollbar */
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* IE/Edge */
+}
 
-  /* Keep the PDF centered; avoid layout shifts */
-  background: white;
+.doc-viewer__pdf-scroll::-webkit-scrollbar {
+  display: none;                  /* Chrome/Safari/Opera */
+}
+
+/* Zoom wrapper holds all pages, scales with slider */
+.doc-viewer__pdf-zoom-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+/* Each page container: canvas behind, text-layer on top */
+.doc-viewer__page {
+  position: relative;
+  display: block;
+  line-height: 0;
+  overflow: hidden;
+}
+
+.doc-viewer__page canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+}
+
+/* Text layer — invisible but selectable & clickable */
+.doc-viewer__page .textLayer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  line-height: 1;
+  z-index: 2;
+  pointer-events: auto;
+}
+
+.doc-viewer__page .textLayer > span {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+  pointer-events: auto;
+}
+
+.doc-viewer__page .textLayer > span::selection {
+  background: rgba(0, 100, 255, 0.3);
+  color: transparent;
+}
+
+.doc-viewer__page .textLayer > a {
+  position: absolute;
+  color: transparent;
+  cursor: pointer;
+  text-decoration: none;
+  pointer-events: auto;
+}
+
+.doc-viewer__page .textLayer > a:hover {
+  background: rgba(0, 100, 255, 0.12);
+  border-radius: 2px;
+}
+
+/* Iframe fallback for file:// protocol */
+.doc-viewer__pdf-iframe {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  background: #fff;
+  color-scheme: light;
+  display: none;
+}
+
+.doc-viewer__panel.is-iframe-mode .doc-viewer__pdf-scroll {
+  display: none;
+}
+
+.doc-viewer__panel.is-iframe-mode .doc-viewer__pdf-iframe {
+  display: block;
+}
+
+/* Keep zoom toolbar visible in iframe mode (no longer hidden) */
+
+/* Zoom toolbar at bottom of panel */
+.doc-viewer__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: #fff;
+  border-top: 1px solid rgba(10, 10, 10, 0.08);
+  flex-shrink: 0;
+}
+
+.doc-viewer__zoom-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid rgba(10, 10, 10, 0.14);
+  background: #f5f5f5;
+  font-family: "Consolas", "Roboto Mono", monospace;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 120ms ease;
+  flex-shrink: 0;
+}
+
+.doc-viewer__zoom-btn:hover {
+  background: #e8e8e8;
+}
+
+.doc-viewer__zoom-btn:active {
+  background: #ddd;
+}
+
+/* Range slider track & thumb */
+.doc-viewer__zoom-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 180px;
+  height: 4px;
+  background: #ddd;
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.doc-viewer__zoom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--ink);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 120ms ease;
+}
+
+.doc-viewer__zoom-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.doc-viewer__zoom-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: var(--ink);
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+}
+
+.doc-viewer__zoom-label {
+  font-family: "Consolas", "Roboto Mono", monospace;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--muted);
+  min-width: 36px;
+  text-align: center;
 }
 
 /* Prevent scrolling/layout interactions while viewer is open */
@@ -838,7 +1010,7 @@ body.doc-viewer-open {
   overflow: hidden;
 }
 
-/* Make sure hidden/visible transitions feel premium on mobile */
+/* Mobile adjustments */
 @media (max-width: 520px) {
   .doc-viewer__panel {
     width: 94vw;
@@ -846,17 +1018,10 @@ body.doc-viewer-open {
     border-radius: 10px;
   }
 
-  .doc-viewer__close {
-    top: 10px;
-    right: 10px;
-    width: 40px;
-    height: 40px;
-  }
-
   .doc-viewer__download {
     top: 10px;
-    left: 10px;
+    right: 10px;
     padding: 10px 12px;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
   }
 }

@@ -144,10 +144,18 @@ tiltCursorTargets.forEach((el) => {
    ============================== */
 const docViewer = document.getElementById('docViewer');
 const docBackdrop = document.querySelector('[data-doc-viewer-backdrop]');
-const docCloseBtn = document.querySelector('[data-doc-viewer-close]');
 const docDownloadA = document.querySelector('[data-doc-viewer-download]');
-const docPdf = document.querySelector('[data-doc-viewer-pdf]');
+const docScrollContainer = document.querySelector('[data-doc-viewer-scroll]');
+const docIframe = document.querySelector('[data-doc-viewer-iframe]');
+const docPanel = document.querySelector('.doc-viewer__panel');
 const docTriggers = document.querySelectorAll('[data-doc]');
+const zoomSlider = document.querySelector('[data-zoom-slider]');
+const zoomLabel = document.querySelector('[data-zoom-label]');
+const zoomInBtn = document.querySelector('[data-zoom-in]');
+const zoomOutBtn = document.querySelector('[data-zoom-out]');
+
+// Detect file:// protocol (PDF.js fetch fails here, need iframe fallback)
+const isFileProtocol = window.location.protocol === 'file:';
 
 const pdfMap = {
   'cv': {
@@ -162,6 +170,75 @@ const pdfMap = {
 
 let lastScrollTop = 0;
 let lastActiveElement = null;
+
+// --- Shared zoom/scroll state (persists across open/close cycles) ---
+let zoomLevel = 100;
+let zoomWrapper = null;
+let scrollVelocity = 0;
+let scrollRAF = null;
+
+const applyZoom = () => {
+  if (zoomLabel) zoomLabel.textContent = `${zoomLevel}%`;
+  if (zoomSlider) zoomSlider.value = zoomLevel;
+
+  if (docPanel && docPanel.classList.contains('is-iframe-mode') && docIframe && docIframe.src) {
+    // Iframe mode: update zoom via URL hash parameter
+    const baseUrl = docIframe.src.split('#')[0];
+    docIframe.src = baseUrl + '#toolbar=0&navpanes=0&view=FitH&zoom=' + zoomLevel;
+    return;
+  }
+
+  // PDF.js canvas mode
+  if (!zoomWrapper) return;
+  const cssScale = zoomLevel / 100;
+  zoomWrapper.style.transform = `scale(${cssScale})`;
+  zoomWrapper.style.width = `${100 / cssScale}%`;
+  zoomWrapper.style.transformOrigin = 'top center';
+};
+
+const setZoom = (newLevel) => {
+  zoomLevel = Math.min(Math.max(Math.round(newLevel / 5) * 5, 50), 300);
+  applyZoom();
+};
+
+// --- One-time listeners (attached once, never duplicated) ---
+if (zoomSlider) {
+  zoomSlider.addEventListener('input', (e) => setZoom(Number(e.target.value)));
+}
+if (zoomInBtn) zoomInBtn.addEventListener('click', () => setZoom(zoomLevel + 10));
+if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => setZoom(zoomLevel - 10));
+
+const clampScroll = () => {
+  if (!docScrollContainer) return;
+  const max = docScrollContainer.scrollHeight - docScrollContainer.clientHeight;
+  docScrollContainer.scrollTop = Math.max(0, Math.min(docScrollContainer.scrollTop, max));
+};
+
+const smoothScroll = () => {
+  scrollVelocity *= 0.88;
+  docScrollContainer.scrollTop += scrollVelocity;
+  clampScroll();
+  if (Math.abs(scrollVelocity) > 0.3) {
+    scrollRAF = requestAnimationFrame(smoothScroll);
+  } else {
+    scrollVelocity = 0;
+    scrollRAF = null;
+  }
+};
+
+if (docScrollContainer) {
+  docScrollContainer.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const cssScale = zoomLevel / 100;
+    const rawDelta = e.deltaY || e.deltaX || 0;
+    const delta = (rawDelta / cssScale) * 0.2;
+    const clampedDelta = Math.max(-40, Math.min(40, delta));
+    scrollVelocity += clampedDelta;
+    if (!scrollRAF) {
+      scrollRAF = requestAnimationFrame(smoothScroll);
+    }
+  }, { passive: false });
+}
 
 let backgroundInertTargets = [];
 let backgroundPrevPointerEvents = new Map();
@@ -215,33 +292,192 @@ const setBackgroundInert = (inert) => {
   }
 };
 
+const renderPdfToCanvases = async (pdfUrl) => {
+  if (!docScrollContainer) return;
+
+  // Reset state
+  docScrollContainer.innerHTML = '';
+  docScrollContainer.scrollTop = 0;
+  scrollVelocity = 0;
+  if (scrollRAF) { cancelAnimationFrame(scrollRAF); scrollRAF = null; }
+
+  if (!window.pdfjsLib) {
+    // PDF.js not loaded — show error with download fallback
+    const errorDiv = document.createElement('div');
+    errorDiv.style.cssText = 'padding:40px;text-align:center;font-family:monospace;color:#666;';
+    errorDiv.innerHTML = '<p style="font-size:1.1rem;margin-bottom:16px;">PDF preview unavailable.</p>'
+      + '<a href="' + pdfUrl + '" download style="color:#000;text-decoration:underline;">Download to view</a>';
+    docScrollContainer.appendChild(errorDiv);
+    return;
+  }
+
+  // Create fresh zoom wrapper
+  zoomWrapper = document.createElement('div');
+  zoomWrapper.className = 'doc-viewer__pdf-zoom-wrapper';
+  docScrollContainer.appendChild(zoomWrapper);
+
+  // Reset zoom to 100% (fit-to-width)
+  zoomLevel = 100;
+
+  try {
+    let loadingTask;
+    if (isFileProtocol) {
+      // On file://, Chrome blocks fetch() — load PDF via XHR + typed array instead
+      console.log('[PDF Viewer] file:// mode, loading via XHR:', pdfUrl);
+      const pdfData = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', encodeURI(pdfUrl), true);
+        xhr.responseType = 'arraybuffer';
+        xhr.onload = () => {
+          console.log('[PDF Viewer] XHR loaded, status:', xhr.status, 'size:', xhr.response ? xhr.response.byteLength : 0);
+          if (xhr.status === 0 || (xhr.status >= 200 && xhr.status < 300)) {
+            if (xhr.response && xhr.response.byteLength > 0) {
+              resolve(new Uint8Array(xhr.response));
+            } else {
+              reject(new Error('XHR returned empty response'));
+            }
+          } else {
+            reject(new Error('XHR failed with status ' + xhr.status));
+          }
+        };
+        xhr.onerror = () => reject(new Error('XHR network error'));
+        xhr.onabort = () => reject(new Error('XHR aborted'));
+        xhr.send();
+      });
+      console.log('[PDF Viewer] Passing', pdfData.byteLength, 'bytes to PDF.js');
+      loadingTask = pdfjsLib.getDocument({ data: pdfData, disableWorker: true });
+    } else {
+      console.log('[PDF Viewer] HTTP mode, loading via fetch:', pdfUrl);
+      loadingTask = pdfjsLib.getDocument(pdfUrl);
+    }
+    const pdf = await loadingTask.promise;
+    console.log('[PDF Viewer] PDF loaded, pages:', pdf.numPages);
+
+    // Calculate fit-to-width scale from page 1
+    const panelWidth = docScrollContainer.clientWidth || 800;
+    const firstPage = await pdf.getPage(1);
+    const defaultViewport = firstPage.getViewport({ scale: 1 });
+    const fitScale = panelWidth / defaultViewport.width;
+    const renderScale = fitScale;
+
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = (pageNum === 1) ? firstPage : await pdf.getPage(pageNum);
+      const viewport = page.getViewport({ scale: renderScale });
+
+      const pageDiv = document.createElement('div');
+      pageDiv.className = 'doc-viewer__page';
+      pageDiv.style.width = `${viewport.width}px`;
+      pageDiv.style.height = `${viewport.height}px`;
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      pageDiv.appendChild(canvas);
+
+      await page.render({ canvasContext: ctx, viewport }).promise;
+
+      // Text layer (manual positioning for selectability)
+      const textContent = await page.getTextContent();
+      const textLayerDiv = document.createElement('div');
+      textLayerDiv.className = 'textLayer';
+      textLayerDiv.style.width = `${viewport.width}px`;
+      textLayerDiv.style.height = `${viewport.height}px`;
+
+      textContent.items.forEach((item) => {
+        if (!item.str && !item.hasEOL) return;
+
+        const vt = viewport.transform;
+        const it = item.transform;
+        const tx = [
+          vt[0] * it[0] + vt[2] * it[1],
+          vt[1] * it[0] + vt[3] * it[1],
+          vt[0] * it[2] + vt[2] * it[3],
+          vt[1] * it[2] + vt[3] * it[3],
+          vt[0] * it[4] + vt[2] * it[5] + vt[4],
+          vt[1] * it[4] + vt[3] * it[5] + vt[5],
+        ];
+
+        const span = document.createElement('span');
+        span.textContent = item.str || '';
+        span.style.left = `${tx[4]}px`;
+        span.style.top = `${tx[5]}px`;
+
+        const fontSize = Math.sqrt(tx[2] * tx[2] + tx[3] * tx[3]);
+        if (fontSize > 0) span.style.fontSize = `${fontSize}px`;
+        if (item.fontName) span.style.fontFamily = item.fontName;
+
+        const textWidth = item.width * viewport.scale;
+        if (textWidth > 0 && item.str) span.style.width = `${textWidth}px`;
+
+        textLayerDiv.appendChild(span);
+
+        if (item.url) {
+          const a = document.createElement('a');
+          a.href = item.url;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.style.left = span.style.left;
+          a.style.top = span.style.top;
+          a.style.width = span.style.width;
+          a.style.height = span.style.fontSize;
+          textLayerDiv.appendChild(a);
+        }
+      });
+
+      pageDiv.appendChild(textLayerDiv);
+      zoomWrapper.appendChild(pageDiv);
+    }
+
+    // Apply initial fit-to-width zoom
+    applyZoom();
+
+  } catch (err) {
+    console.error('PDF render error:', err);
+    // Show error to user with download fallback
+    const errorDiv = document.createElement('div');
+    errorDiv.style.cssText = 'padding:40px;text-align:center;font-family:monospace;color:#666;';
+    errorDiv.innerHTML = '<p style="font-size:1.1rem;margin-bottom:16px;">Unable to preview PDF.</p>'
+      + '<p style="font-size:0.8rem;color:#999;margin-bottom:16px;">' + (err.message || err) + '</p>'
+      + '<a href="' + pdfUrl + '" download style="color:#000;text-decoration:underline;">Download to view</a>';
+    if (zoomWrapper) zoomWrapper.innerHTML = '';
+    (zoomWrapper || docScrollContainer).appendChild(errorDiv);
+  }
+};
+
 const openDoc = (docKey) => {
-  if (!docViewer || !docPdf || !docDownloadA) return;
+  if (!docViewer || !docDownloadA) return;
 
   const doc = pdfMap[docKey];
   if (!doc) return;
 
-  const scrollContainer = document.querySelector('.scroll-container');
-  if (scrollContainer) lastScrollTop = scrollContainer.scrollTop;
+  const scrollContainerEl = document.querySelector('.scroll-container');
+  if (scrollContainerEl) lastScrollTop = scrollContainerEl.scrollTop;
 
   lastActiveElement = document.activeElement;
 
-  // Load iframe with toolbar hidden (as much as supported)
-  const toolbarSafeSrc = `${doc.pdfUrl}#toolbar=0&navpanes=0&scrollbar=0`;
-  docPdf.src = toolbarSafeSrc;
-
-  // Configure download with original filename
-  // Using direct link preserves original filename via download attribute.
   docDownloadA.href = doc.pdfUrl;
   docDownloadA.download = doc.filename;
 
-  // Show viewer
+  if (isFileProtocol && docIframe && docPanel) {
+    // file:// — Chrome blocks fetch/XHR, use browser's native PDF viewer via iframe
+    docPanel.classList.add('is-iframe-mode');
+    // #toolbar=0 hides Chrome's native PDF toolbar; #navpanes=0 hides sidebar
+    docIframe.src = encodeURI(doc.pdfUrl) + '#toolbar=0&navpanes=0&view=FitH';
+  } else if (!window.pdfjsLib && docIframe && docPanel) {
+    // PDF.js not loaded — fallback to iframe
+    docPanel.classList.add('is-iframe-mode');
+    docIframe.src = encodeURI(doc.pdfUrl) + '#toolbar=0&navpanes=0&view=FitH';
+  } else {
+    // HTTP + PDF.js — full-featured rendering
+    if (docPanel) docPanel.classList.remove('is-iframe-mode');
+    if (docIframe) { docIframe.src = ''; }
+    renderPdfToCanvases(doc.pdfUrl);
+  }
+
   docViewer.setAttribute('aria-hidden', 'false');
   document.body.classList.add('doc-viewer-open');
   setBackgroundInert(true);
-
-  // Focus close for accessibility
-  if (docCloseBtn) docCloseBtn.focus({ preventScroll: true });
 };
 
 let isFlipped = false;
@@ -288,93 +524,76 @@ if (cvFlipContainer && cvFlipInner) {
     hasDragged = false;
   });
 
-  // Click handler for CV - opens CV PDF
-  cvFlipContainer.addEventListener("click", (e) => {
-    // Only prevent if we actually dragged significantly
-    if (hasDragged) {
-      hasDragged = false;
-      return;
-    }
-    e.preventDefault();
-    openDoc("cv");
-  });
-}
-
-// Also handle clicks on CV label
-const cvLabel = document.querySelector('.cv-label[data-doc="cv"]');
-if (cvLabel) {
-  cvLabel.addEventListener("click", (e) => {
-    e.preventDefault();
-    openDoc("cv");
-  });
+  // Click handler for CV - handled by generic docTriggers below (data-doc="cv")
+  // No separate handler needed here to avoid double-firing openDoc.
 }
 
 const closeDoc = () => {
   if (!docViewer) return;
 
+  // Start closing animation
   docViewer.setAttribute('aria-hidden', 'true');
   document.body.classList.remove('doc-viewer-open');
   setBackgroundInert(false);
 
-  // Restore scroll position
-  const scrollContainer = document.querySelector('.scroll-container');
-  if (scrollContainer) scrollContainer.scrollTop = lastScrollTop;
+  // Delay cleanup until closing transition finishes (~280ms)
+  setTimeout(() => {
+    if (docViewer.getAttribute('aria-hidden') !== 'true') return; // re-opened during close
 
-  // Keep iframe src to avoid re-download; but remove focus trap
+    // Clean up PDF.js state
+    if (docScrollContainer) {
+      docScrollContainer.innerHTML = '';
+      docScrollContainer.scrollTop = 0;
+    }
+    zoomWrapper = null;
+    scrollVelocity = 0;
+    if (scrollRAF) { cancelAnimationFrame(scrollRAF); scrollRAF = null; }
+
+    // Clean up iframe mode
+    if (docPanel) docPanel.classList.remove('is-iframe-mode');
+    if (docIframe) { docIframe.src = ''; }
+  }, 300);
+
+  // Restore scroll position
+  const scrollContainerEl = document.querySelector('.scroll-container');
+  if (scrollContainerEl) scrollContainerEl.scrollTop = lastScrollTop;
+
+  // Restore focus
   if (lastActiveElement && typeof lastActiveElement.focus === 'function') {
     lastActiveElement.focus({ preventScroll: true });
   }
 };
 
 /**
- * Open on triggers (delegated).
+ * Delegated click handler — catches ALL clicks on any [data-doc] element
+ * (including nested children like <img>). This is bulletproof across browsers.
  */
-docTriggers.forEach((el) => {
-  el.addEventListener("click", (e) => {
-    e.preventDefault();
-    const key = el.getAttribute("data-doc");
-    openDoc(key);
-  });
+document.addEventListener('click', (e) => {
+  const trigger = e.target.closest('[data-doc]');
+  if (!trigger) return;
+  // Ignore clicks inside the open doc viewer itself
+  if (docViewer && trigger.closest('.doc-viewer')) return;
 
-  // keyboard accessibility
-  el.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      const key = el.getAttribute("data-doc");
-      openDoc(key);
-    }
-  });
+  e.preventDefault();
+  const key = trigger.getAttribute('data-doc');
+  if (key) openDoc(key);
 });
 
-// HARD fallback: capture-phase click handler for CV, ensuring it opens even if flip/tilt layers stop bubbling.
-document.addEventListener(
-  "click",
-  (e) => {
-    try {
-      const target = e.target;
-      const closestCv = target?.closest?.(
-        '.cv-flip-container[data-doc="cv"], .cv-page1[data-doc="cv"], .cv-page2[data-doc="cv"]'
-      );
-      if (!closestCv) return;
-      openDoc("cv");
-    } catch (_) {
-      // no-op
-    }
-  },
-  true
-);
+// Keyboard accessibility for [data-doc] elements
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const trigger = e.target.closest && e.target.closest('[data-doc]');
+  if (!trigger) return;
+  if (docViewer && trigger.closest('.doc-viewer')) return;
+
+  e.preventDefault();
+  const key = trigger.getAttribute('data-doc');
+  if (key) openDoc(key);
+});
 
 // Close handlers
-if (docCloseBtn) {
-  docCloseBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    closeDoc();
-  });
-}
-
 if (docBackdrop) {
   docBackdrop.addEventListener('click', (e) => {
-    // only close when clicking the backdrop itself
     e.preventDefault();
     closeDoc();
   });
