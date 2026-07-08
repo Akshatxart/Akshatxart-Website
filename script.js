@@ -292,7 +292,7 @@ const setBackgroundInert = (inert) => {
   }
 };
 
-const renderPdfToCanvases = async (pdfUrl) => {
+const renderPdfToCanvases = async (pdfUrl, docKey) => {
   if (!docScrollContainer) return;
 
   // Reset state
@@ -321,37 +321,19 @@ const renderPdfToCanvases = async (pdfUrl) => {
 
   try {
     let loadingTask;
-    if (isFileProtocol) {
-      // On file://, Chrome blocks fetch() — load PDF via XHR + typed array instead
-      console.log('[PDF Viewer] file:// mode, loading via XHR:', pdfUrl);
-      const pdfData = await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('GET', encodeURI(pdfUrl), true);
-        xhr.responseType = 'arraybuffer';
-        xhr.onload = () => {
-          console.log('[PDF Viewer] XHR loaded, status:', xhr.status, 'size:', xhr.response ? xhr.response.byteLength : 0);
-          if (xhr.status === 0 || (xhr.status >= 200 && xhr.status < 300)) {
-            if (xhr.response && xhr.response.byteLength > 0) {
-              resolve(new Uint8Array(xhr.response));
-            } else {
-              reject(new Error('XHR returned empty response'));
-            }
-          } else {
-            reject(new Error('XHR failed with status ' + xhr.status));
-          }
-        };
-        xhr.onerror = () => reject(new Error('XHR network error'));
-        xhr.onabort = () => reject(new Error('XHR aborted'));
-        xhr.send();
+    if (isFileProtocol && window.__pdfData && window.__pdfData[docKey]) {
+      // file:// — use embedded base64 data (no fetch/XHR needed)
+      loadingTask = pdfjsLib.getDocument({
+        url: window.__pdfData[docKey],
+        disableWorker: true
       });
-      console.log('[PDF Viewer] Passing', pdfData.byteLength, 'bytes to PDF.js');
-      loadingTask = pdfjsLib.getDocument({ data: pdfData, disableWorker: true });
+    } else if (isFileProtocol) {
+      // file:// without base64 data — can't load, show error
+      throw new Error('No embedded PDF data available on file://');
     } else {
-      console.log('[PDF Viewer] HTTP mode, loading via fetch:', pdfUrl);
       loadingTask = pdfjsLib.getDocument(pdfUrl);
     }
     const pdf = await loadingTask.promise;
-    console.log('[PDF Viewer] PDF loaded, pages:', pdf.numPages);
 
     // Calculate fit-to-width scale from page 1
     const panelWidth = docScrollContainer.clientWidth || 800;
@@ -459,10 +441,14 @@ const openDoc = (docKey) => {
   docDownloadA.href = doc.pdfUrl;
   docDownloadA.download = doc.filename;
 
-  if (isFileProtocol && docIframe && docPanel) {
-    // file:// — Chrome blocks fetch/XHR, use browser's native PDF viewer via iframe
+  if (isFileProtocol && window.__pdfData && window.__pdfData[docKey] && window.pdfjsLib) {
+    // file:// with embedded base64 data — use PDF.js for full rendering
+    if (docPanel) docPanel.classList.remove('is-iframe-mode');
+    if (docIframe) { docIframe.src = ''; }
+    renderPdfToCanvases(doc.pdfUrl, docKey);
+  } else if (isFileProtocol && docIframe && docPanel) {
+    // file:// without base64 data — fallback to iframe
     docPanel.classList.add('is-iframe-mode');
-    // #toolbar=0 hides Chrome's native PDF toolbar; #navpanes=0 hides sidebar
     docIframe.src = encodeURI(doc.pdfUrl) + '#toolbar=0&navpanes=0&view=FitH';
   } else if (!window.pdfjsLib && docIframe && docPanel) {
     // PDF.js not loaded — fallback to iframe
@@ -472,7 +458,7 @@ const openDoc = (docKey) => {
     // HTTP + PDF.js — full-featured rendering
     if (docPanel) docPanel.classList.remove('is-iframe-mode');
     if (docIframe) { docIframe.src = ''; }
-    renderPdfToCanvases(doc.pdfUrl);
+    renderPdfToCanvases(doc.pdfUrl, docKey);
   }
 
   docViewer.setAttribute('aria-hidden', 'false');
