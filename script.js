@@ -595,48 +595,153 @@ document.addEventListener('keydown', (e) => {
 const runTitleGlitch = () => {
   const title = document.querySelector('.about-section__title');
   if (!title) return;
-  
+
+  // Prevent re-triggering if already running
+  if (title._glitching) return;
+  title._glitching = true;
+
   const originalText = title.textContent;
-  const glitchChars = ['а', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '@', '#', '$', '%', '&', '*'];
-  
-  const weights = [700, 800, 900, 800, 700];
-  
-  const steps = 5;
-  const tl = gsap.timeline();
+  const glitchChars = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '@', '#', '$', '%', '&', '*', '?', '!', '/', '\\', '|', '_', '~', ':', ';', '<', '>'];
 
-  const scrambleText = () => {
+  // Remove any existing glitch layers
+  const existingGlitches = title.querySelectorAll('.glitch-layer');
+  existingGlitches.forEach(el => el.remove());
 
-    let scrambled = '';
-    for (let i = 0; i < originalText.length; i++) {
-      if (Math.random() < 0.15) {
-        scrambled += glitchChars[Math.floor(Math.random() * glitchChars.length)];
-      } else {
-        scrambled += originalText[i];
-      }
-    }
-    title.textContent = scrambled;
+  // Create two glitch overlay layers (red + cyan) for visual displacement
+  const createGlitchLayer = (className, color, offsetX, offsetY) => {
+    const layer = document.createElement('span');
+    layer.className = `glitch-layer ${className}`;
+    layer.textContent = originalText;
+    layer.style.cssText = `
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      font-family: inherit;
+      font-size: inherit;
+      font-weight: inherit;
+      letter-spacing: inherit;
+      line-height: inherit;
+      text-transform: lowercase;
+      color: ${color};
+      pointer-events: none;
+      clip-path: inset(0 0 0 0);
+      transform: translate(${offsetX}px, ${offsetY}px);
+      opacity: 0;
+      z-index: -1;
+    `;
+    return layer;
   };
 
-  // Scrambling/glitch effect disabled (requested)
-  // for (let i = 0; i < steps; i++) {
-  //   tl.to(title, {
-  //     fontWeight: weights[Math.floor(Math.random() * weights.length)],
-  //     duration: 0.6,
-  //     ease: 'power2.out',
-  //     onUpdate: scrambleText
-  //   });
-  // }
+  const redLayer = createGlitchLayer('glitch-red', '#ff0040', 1.5, 0);
+  const cyanLayer = createGlitchLayer('glitch-cyan', '#00e5ff', -1.5, 0);
+  
+  const computedPos = window.getComputedStyle(title).position;
+  if (computedPos === 'static') title.style.position = 'relative';
 
+  title.appendChild(redLayer);
+  title.appendChild(cyanLayer);
 
-  tl.to(title, {
-    fontWeight: 800,
-    textTransform: 'lowercase',
-    duration: 0.35,
-    ease: 'power2.out',
+  const scrambleDuration = 0.35; // how long scrambling lasts (seconds)
+  const settleDuration = 0.25;   // how long settling lasts
+  const intervalMs = 35;         // ms between scramble frames
+  const maxScrambles = Math.floor((scrambleDuration * 1000) / intervalMs);
+
+  let scrambleInterval = null;
+
+  const tl = gsap.timeline({
+    ease: 'power1.out',
     onComplete: () => {
+      title.textContent = originalText;
+      gsap.to([redLayer, cyanLayer], {
+        opacity: 0,
+        duration: 0.1,
+        ease: 'power1.out',
+        onComplete: () => {
+          redLayer.remove();
+          cyanLayer.remove();
+          title._glitching = false;
+        }
+      });
+    }
+  });
+
+  // Phase 1: Scramble build-up (spans scrambleDuration seconds)
+  tl.to({}, {
+    duration: scrambleDuration,
+    ease: 'power1.out',
+    onStart: () => {
+      gsap.to(redLayer, { opacity: 0.5, duration: 0.08, ease: 'power1.out' });
+      gsap.to(cyanLayer, { opacity: 0.5, duration: 0.08, ease: 'power1.out' });
+
+      let scrambleCount = 0;
+      scrambleInterval = setInterval(() => {
+        if (scrambleCount >= maxScrambles) {
+          clearInterval(scrambleInterval);
+          scrambleInterval = null;
+          return;
+        }
+        scrambleCount++;
+        
+        const t = scrambleCount / maxScrambles;
+        const intensity = t < 0.4
+          ? t * 2.0           // ramp up from 0 → 0.8
+          : 0.8 - (t - 0.4) * 1.33; // ramp down from 0.8 → ~0
+        
+        let scrambled = '';
+        for (let i = 0; i < originalText.length; i++) {
+          scrambled += Math.random() < intensity
+            ? glitchChars[Math.floor(Math.random() * glitchChars.length)]
+            : originalText[i];
+        }
+        title.textContent = scrambled;
+        redLayer.textContent = scrambled;
+        cyanLayer.textContent = scrambled;
+
+        // Slice offset layers
+        const sy = Math.random() * 55;
+        const sh = 5 + Math.random() * 18;
+        redLayer.style.clipPath = `inset(${sy}% 0 ${100 - sy - sh}% 0)`;
+        cyanLayer.style.clipPath = `inset(${sy + 8}% 0 ${100 - sy - sh - 8}% 0)`;
+        
+        const jx = (Math.random() - 0.5) * 5;
+        const jy = (Math.random() - 0.5) * 2;
+        redLayer.style.transform = `translate(${1.5 + jx}px, ${jy}px)`;
+        cyanLayer.style.transform = `translate(${-1.5 - jx}px, ${-jy}px)`;
+      }, intervalMs);
+    },
+    onComplete: () => {
+      if (scrambleInterval) {
+        clearInterval(scrambleInterval);
+        scrambleInterval = null;
+      }
+    }
+  });
+
+  // Phase 2: Settle back to original — easy ease out
+  tl.to(title, {
+    duration: settleDuration,
+    ease: 'power1.out',
+    onStart: () => {
       title.textContent = originalText;
     }
   });
+
+  // Phase 3: Fade out glitch layers (overlaps with settle)
+  tl.to([redLayer, cyanLayer], {
+    opacity: 0,
+    duration: settleDuration * 0.6,
+    ease: 'power1.out',
+    onStart: () => {
+      redLayer.textContent = originalText;
+      cyanLayer.textContent = originalText;
+      redLayer.style.transform = 'translate(2px, 0)';
+      cyanLayer.style.transform = 'translate(-2px, 0)';
+      redLayer.style.clipPath = 'inset(0 0 0 0)';
+      cyanLayer.style.clipPath = 'inset(0 0 0 0)';
+    }
+  }, `-=${settleDuration * 0.4}`);
 };
 
 const runCVAnimation = () => {
