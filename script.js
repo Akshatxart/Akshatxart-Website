@@ -757,141 +757,49 @@ const runDescriptionZoomOut = () => {
   );
 };
 
-// Logo hover animation
+// Logo hover animation - Minimal and reliable
 const logoContainer = document.querySelector(".logo-container");
 const logoImage = document.getElementById("logoImage");
 const logoVideo = document.getElementById("logoVideo");
 
 if (logoContainer && logoImage && logoVideo) {
   console.log('Logo animation initialized');
-  console.log('Video sources:', Array.from(logoVideo.querySelectorAll('source')).map(s => s.src));
+  console.log('Video sources:', logoVideo.querySelectorAll('source').length);
   console.log('Video readyState:', logoVideo.readyState);
-
-  // Check if video can play
-  const canPlayVideo = () => {
-    const sources = logoVideo.querySelectorAll('source');
-    for (let source of sources) {
-      const type = source.type;
-      const canPlay = logoVideo.canPlayType(type);
-      console.log(`Can play ${type}:`, canPlay);
-      if (canPlay === 'probably' || canPlay === 'maybe') {
-        return true;
-      }
-    }
-    return false;
-  };
-
-  console.log('Video format support:', canPlayVideo());
-
-  // Ensure video is loaded before playing
-  const playVideo = () => {
-    console.log('Attempting to play video...');
-    logoVideo.pause();
-    logoVideo.currentTime = 0;
-    
-    // Ensure video is not looping
-    logoVideo.loop = false;
-    
-    const playPromise = logoVideo.play();
-    if (playPromise !== undefined) {
-      playPromise.then(() => {
-        console.log('✓ Video playing successfully');
-      }).catch((error) => {
-        console.error('✗ Video play failed:', error);
-        console.error('Error name:', error.name);
-        console.error('Error message:', error.message);
-        // Reset to static image on error
-        logoVideo.style.opacity = "0";
-        logoImage.style.opacity = "1";
-      });
-    }
-  };
+  
+  logoVideo.loop = false;
+  
+  // Preload video
+  logoVideo.load();
 
   logoContainer.addEventListener("mouseenter", () => {
-    console.log('Mouse enter - attempting to show video');
-    logoImage.style.opacity = "0";
-    logoVideo.style.opacity = "1";
-
-    if (logoVideo.readyState >= 2) {
-      // Video is already loaded
-      console.log('✓ Video ready (readyState:', logoVideo.readyState, '), playing...');
-      playVideo();
-    } else {
-      // Wait for video to load
-      console.log('Video not ready (readyState:', logoVideo.readyState, '), waiting...');
-      
-      const timeout = setTimeout(() => {
-        console.error('✗ Video load timeout - video took too long to load');
-        logoVideo.style.opacity = "0";
-        logoImage.style.opacity = "1";
-      }, 5000);
-      
-      const onVideoReady = () => {
-        clearTimeout(timeout);
-        console.log('✓ Video ready, playing...');
-        playVideo();
-      };
-      
-      logoVideo.addEventListener('loadeddata', onVideoReady, { once: true });
-      logoVideo.addEventListener('canplay', onVideoReady, { once: true });
-      
-      // Trigger load
-      logoVideo.load();
-    }
+    console.log('Mouse enter - playing video');
+    logoVideo.currentTime = 0;
+    logoVideo.play().then(() => {
+      console.log('Video playing successfully');
+      logoImage.style.opacity = "0";
+      logoVideo.style.opacity = "1";
+    }).catch(err => {
+      console.error('Video play failed:', err);
+    });
   });
 
   logoContainer.addEventListener("mouseleave", () => {
     console.log('Mouse leave - showing image');
     logoVideo.pause();
     logoVideo.currentTime = 0;
-
     logoVideo.style.opacity = "0";
     logoImage.style.opacity = "1";
   });
 
   logoVideo.addEventListener("ended", () => {
-    console.log('✓ Video ended - showing image');
+    console.log('Video ended - showing image');
     logoVideo.style.opacity = "0";
     logoImage.style.opacity = "1";
   });
-
+  
   logoVideo.addEventListener('error', (e) => {
-    console.error('✗ Video error event:', e);
-    console.error('Video error code:', logoVideo.error?.code);
-    console.error('Video error message:', logoVideo.error?.message);
-    logoVideo.style.opacity = "0";
-    logoImage.style.opacity = "1";
-  });
-
-  // Monitor video loading
-  logoVideo.addEventListener('loadstart', () => {
-    console.log('Video load started');
-  });
-  
-  logoVideo.addEventListener('loadedmetadata', () => {
-    console.log('✓ Video metadata loaded, duration:', logoVideo.duration);
-  });
-  
-  logoVideo.addEventListener('canplaythrough', () => {
-    console.log('✓ Video can play through');
-  });
-
-  // Preload the video
-  console.log('Preloading video...');
-  logoVideo.load();
-  
-  // Log when page is fully loaded
-  window.addEventListener('load', () => {
-    console.log('Page fully loaded');
-    console.log('Video readyState after page load:', logoVideo.readyState);
-    console.log('Video networkState:', logoVideo.networkState);
-    console.log('Video readyState details:', {
-      0: 'HAVE_NOTHING',
-      1: 'HAVE_METADATA',
-      2: 'HAVE_CURRENT_DATA',
-      3: 'HAVE_FUTURE_DATA',
-      4: 'HAVE_ENOUGH_DATA'
-    }[logoVideo.readyState] || 'unknown');
+    console.error('Video error:', e);
   });
 }
 
