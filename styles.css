@@ -66,7 +66,7 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  padding: clamp(40px, 8vw, 120px) clamp(20px, 4vw, 60px);
+  padding: clamp(15px, 3vw, 40px) clamp(20px, 4vw, 60px);
   scroll-snap-align: start;
 }
 
@@ -83,7 +83,7 @@ body {
 }
 
 .page-section:nth-child(2) {
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .page-section:nth-child(2) .page-content {
@@ -97,7 +97,7 @@ body {
 #page2.page-section .page-content {
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   flex-wrap: nowrap;
   flex: 1;
 }
@@ -109,10 +109,16 @@ body {
   width: 100%;
 }
 
+#page2.page-section .about-section__title {
+  margin-bottom: clamp(24px, 4vw, 48px);
+}
 
-/* Keep the bio paragraph perfectly centered */
+#page2.page-section .about-section__tagline {
+  margin-bottom: clamp(24px, 4vw, 48px);
+}
+
 #page2.page-section .about-section__bio {
-  margin: 0;
+  margin: clamp(16px, 3vw, 32px) 0 clamp(16px, 3vw, 32px);
 }
 
 /* Add side columns (CV thumbnail left / cover letter right) while keeping bio centered */
@@ -128,7 +134,7 @@ body {
   flex-direction: row;
   justify-content: center;
   align-items: flex-start;
-  gap: clamp(60px, 10vw, 140px);
+  gap: clamp(40px, 6vw, 80px);
   width: 100%;
   position: relative;
   z-index: 10;
@@ -536,6 +542,30 @@ body {
   display: block;
   transform: none !important;
   position: static !important;
+}
+
+/* Decode effect styles */
+.about-section__tagline.decode-effect {
+  position: relative;
+  min-height: 3.5em; /* Prevent layout shift during decoding */
+}
+
+.about-section__tagline.decode-effect .char {
+  display: inline-block;
+  opacity: 0;
+  animation: charReveal 0.05s ease forwards;
+}
+
+/* Prevent layout shifts in CV and cover letter during decode */
+.about-section__docs {
+  transform: translateZ(0); /* GPU acceleration */
+  backface-visibility: hidden;
+}
+
+@keyframes charReveal {
+  to {
+    opacity: 1;
+  }
 }
 
 .about-section__tagline br {

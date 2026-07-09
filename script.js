@@ -757,6 +757,67 @@ const runDescriptionZoomOut = () => {
   );
 };
 
+// Decode effect for tagline
+const runDecodeEffect = (element) => {
+  if (!element || element.classList.contains('decode-effect')) return;
+  
+  element.classList.add('decode-effect');
+  const text = element.textContent;
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+  element.textContent = '';
+  
+  const charsToReveal = [];
+  for (let i = 0; i < text.length; i++) {
+    charsToReveal.push({
+      original: text[i],
+      current: text[i] === ' ' ? ' ' : chars[Math.floor(Math.random() * chars.length)],
+      revealed: false
+    });
+  }
+  
+  let revealIndex = 0;
+  const totalChars = charsToReveal.length;
+  
+  const revealNext = () => {
+    if (revealIndex >= totalChars) {
+      element.textContent = text;
+      element.classList.add('is-decoded');
+      return;
+    }
+    
+    // Reveal characters in batches for faster effect
+    const batchSize = Math.max(1, Math.floor(totalChars / 30)); // Reveal ~30 characters total
+    for (let b = 0; b < batchSize && revealIndex < totalChars; b++) {
+      charsToReveal[revealIndex].revealed = true;
+      revealIndex++;
+    }
+    
+    // Build current text
+    let currentText = '';
+    for (let i = 0; i < totalChars; i++) {
+      if (charsToReveal[i].revealed) {
+        currentText += charsToReveal[i].original;
+      } else {
+        currentText += charsToReveal[i].current;
+        // Occasionally change the scrambled character
+        if (Math.random() > 0.5) {
+          charsToReveal[i].current = chars[Math.floor(Math.random() * chars.length)];
+        }
+      }
+    }
+    
+    element.textContent = currentText;
+    
+    // Fast reveal with easing (slow down as it progresses)
+    const progress = revealIndex / totalChars;
+    const speed = 30 + (progress * 50); // 30-80ms, slowing down
+    setTimeout(revealNext, speed);
+  };
+  
+  // Start after a short delay
+  setTimeout(revealNext, 300);
+};
+
 // Logo hover animation - Minimal and reliable
 const logoContainer = document.querySelector(".logo-container");
 const logoImage = document.getElementById("logoImage");
@@ -871,12 +932,23 @@ if (scrollContainer) {
 
   // Page 2 animations
   const page2 = document.querySelector('#page2');
+  let taglineDecoded = false;
+  
   if (page2) {
     const page2Observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           runTitleGlitch();
           runDescriptionZoomOut();
+          
+          // Decode effect for tagline - only once
+          if (!taglineDecoded) {
+            taglineDecoded = true;
+            const tagline = document.getElementById('taglineText');
+            if (tagline) {
+              runDecodeEffect(tagline);
+            }
+          }
         }
       });
     }, { threshold: 0.3 });
