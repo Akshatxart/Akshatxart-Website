@@ -18,7 +18,6 @@
 
 * {
   box-sizing: border-box;
-  cursor: none !important;
 }
 
 html {
@@ -28,7 +27,6 @@ html {
 }
 
 body {
-  cursor: none;
   margin: 0;
   height: 100%;
   overflow: hidden;
@@ -194,6 +192,9 @@ body {
 
 .brand {
   display: block;
+  width: 72px;
+  height: 72px;
+  position: relative;
 }
 
 
@@ -235,18 +236,43 @@ body {
 /* Make the logo visible/positioned like a top-left brand */
 .site-header > a.brand {
   pointer-events: auto;
+  cursor: pointer !important;
   position: fixed;
   top: 10px;
   left: 18px;
   z-index: 11;
 }
 
-.site-header > a.brand img {
+/* Logo hover animation styles */
+.logo-container {
+  position: relative;
+  display: block;
+  width: 72px;
+  height: 72px;
+}
+
+.logo-image,
+.logo-video {
+  display: block;
   width: 72px;
   height: 72px;
   object-fit: contain;
-  display: block;
+  max-width: 100%;
+  max-height: 100%;
+}
 
+.logo-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.logo-image {
+  opacity: 1;
+  transition: opacity 0.25s ease;
 }
 
 .grain {

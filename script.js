@@ -47,60 +47,6 @@ const revealObserver = new IntersectionObserver(
 
 revealItems.forEach((item) => revealObserver.observe(item));
 
-// Circular Cursor with Text Reveal
-const cursorEl = document.querySelector(".cursor__inner");
-const cursorTextEl = document.querySelector(".cursor__text");
-
-if (cursorEl) {
-  let cursorX = 0;
-  let cursorY = 0;
-  let targetX = 0;
-  let targetY = 0;
-  
-  const lerp = (start, end, factor) => start + (end - start) * factor;
-  
-  const animateCursor = () => {
-    cursorX = lerp(cursorX, targetX, 0.15);
-    cursorY = lerp(cursorY, targetY, 0.15);
-    
-    cursorEl.style.left = cursorX + "px";
-    cursorEl.style.top = cursorY + "px";
-    
-    if (cursorTextEl) {
-      cursorTextEl.style.left = cursorX + "px";
-      cursorTextEl.style.top = cursorY + "px";
-    }
-    
-    requestAnimationFrame(animateCursor);
-  };
-  
-  window.addEventListener("mousemove", (e) => {
-    targetX = e.clientX;
-    targetY = e.clientY;
-  });
-  
-  // Hover effects for interactive elements with text reveal
-  const interactiveElements = document.querySelectorAll("a, button, .cv-flip-container, .cover-letter-container");
-  
-  interactiveElements.forEach(el => {
-    el.addEventListener("mouseenter", () => {
-      cursorEl.classList.add("hover");
-      if (cursorTextEl) {
-        const linkText = el.textContent.trim().toLowerCase();
-        cursorTextEl.textContent = linkText;
-        cursorTextEl.classList.add("visible");
-      }
-    });
-    el.addEventListener("mouseleave", () => {
-      cursorEl.classList.remove("hover");
-      if (cursorTextEl) {
-        cursorTextEl.classList.remove("visible");
-      }
-    });
-  });
-  
-  animateCursor();
-}
 
 if (tiltPanel) {
    tiltPanel.addEventListener("pointermove", (event) => {
@@ -810,6 +756,144 @@ const runDescriptionZoomOut = () => {
     }
   );
 };
+
+// Logo hover animation
+const logoContainer = document.querySelector(".logo-container");
+const logoImage = document.getElementById("logoImage");
+const logoVideo = document.getElementById("logoVideo");
+
+if (logoContainer && logoImage && logoVideo) {
+  console.log('Logo animation initialized');
+  console.log('Video sources:', Array.from(logoVideo.querySelectorAll('source')).map(s => s.src));
+  console.log('Video readyState:', logoVideo.readyState);
+
+  // Check if video can play
+  const canPlayVideo = () => {
+    const sources = logoVideo.querySelectorAll('source');
+    for (let source of sources) {
+      const type = source.type;
+      const canPlay = logoVideo.canPlayType(type);
+      console.log(`Can play ${type}:`, canPlay);
+      if (canPlay === 'probably' || canPlay === 'maybe') {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  console.log('Video format support:', canPlayVideo());
+
+  // Ensure video is loaded before playing
+  const playVideo = () => {
+    console.log('Attempting to play video...');
+    logoVideo.pause();
+    logoVideo.currentTime = 0;
+    
+    // Ensure video is not looping
+    logoVideo.loop = false;
+    
+    const playPromise = logoVideo.play();
+    if (playPromise !== undefined) {
+      playPromise.then(() => {
+        console.log('✓ Video playing successfully');
+      }).catch((error) => {
+        console.error('✗ Video play failed:', error);
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
+        // Reset to static image on error
+        logoVideo.style.opacity = "0";
+        logoImage.style.opacity = "1";
+      });
+    }
+  };
+
+  logoContainer.addEventListener("mouseenter", () => {
+    console.log('Mouse enter - attempting to show video');
+    logoImage.style.opacity = "0";
+    logoVideo.style.opacity = "1";
+
+    if (logoVideo.readyState >= 2) {
+      // Video is already loaded
+      console.log('✓ Video ready (readyState:', logoVideo.readyState, '), playing...');
+      playVideo();
+    } else {
+      // Wait for video to load
+      console.log('Video not ready (readyState:', logoVideo.readyState, '), waiting...');
+      
+      const timeout = setTimeout(() => {
+        console.error('✗ Video load timeout - video took too long to load');
+        logoVideo.style.opacity = "0";
+        logoImage.style.opacity = "1";
+      }, 5000);
+      
+      const onVideoReady = () => {
+        clearTimeout(timeout);
+        console.log('✓ Video ready, playing...');
+        playVideo();
+      };
+      
+      logoVideo.addEventListener('loadeddata', onVideoReady, { once: true });
+      logoVideo.addEventListener('canplay', onVideoReady, { once: true });
+      
+      // Trigger load
+      logoVideo.load();
+    }
+  });
+
+  logoContainer.addEventListener("mouseleave", () => {
+    console.log('Mouse leave - showing image');
+    logoVideo.pause();
+    logoVideo.currentTime = 0;
+
+    logoVideo.style.opacity = "0";
+    logoImage.style.opacity = "1";
+  });
+
+  logoVideo.addEventListener("ended", () => {
+    console.log('✓ Video ended - showing image');
+    logoVideo.style.opacity = "0";
+    logoImage.style.opacity = "1";
+  });
+
+  logoVideo.addEventListener('error', (e) => {
+    console.error('✗ Video error event:', e);
+    console.error('Video error code:', logoVideo.error?.code);
+    console.error('Video error message:', logoVideo.error?.message);
+    logoVideo.style.opacity = "0";
+    logoImage.style.opacity = "1";
+  });
+
+  // Monitor video loading
+  logoVideo.addEventListener('loadstart', () => {
+    console.log('Video load started');
+  });
+  
+  logoVideo.addEventListener('loadedmetadata', () => {
+    console.log('✓ Video metadata loaded, duration:', logoVideo.duration);
+  });
+  
+  logoVideo.addEventListener('canplaythrough', () => {
+    console.log('✓ Video can play through');
+  });
+
+  // Preload the video
+  console.log('Preloading video...');
+  logoVideo.load();
+  
+  // Log when page is fully loaded
+  window.addEventListener('load', () => {
+    console.log('Page fully loaded');
+    console.log('Video readyState after page load:', logoVideo.readyState);
+    console.log('Video networkState:', logoVideo.networkState);
+    console.log('Video readyState details:', {
+      0: 'HAVE_NOTHING',
+      1: 'HAVE_METADATA',
+      2: 'HAVE_CURRENT_DATA',
+      3: 'HAVE_FUTURE_DATA',
+      4: 'HAVE_ENOUGH_DATA'
+    }[logoVideo.readyState] || 'unknown');
+  });
+}
 
 updateHeader();
 if (scrollContainer) {
