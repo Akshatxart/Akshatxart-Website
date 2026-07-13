@@ -1,2 +1,0 @@
-- [ ] Fix CV side thumbnail visibility on page2 (ensure not stuck in `.reveal` opacity: 0 state)
-- [ ] Verify by opening index.html in browser

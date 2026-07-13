@@ -1,3 +1,5 @@
+
+
 const header = document.querySelector("[data-header]");
 const revealItems = document.querySelectorAll(".reveal");
 const tiltPanel = document.querySelector("[data-tilt]");
@@ -538,8 +540,8 @@ document.addEventListener('keydown', (e) => {
 });
 
 // Animation functions
-const runTitleGlitch = () => {
-  const title = document.querySelector('.about-section__title');
+const runTitleGlitch = (selector = '.about-section__title') => {
+  const title = document.querySelector(selector);
   if (!title) return;
 
   // Prevent re-triggering if already running
@@ -762,9 +764,13 @@ const runDecodeEffect = (element) => {
   if (!element || element.classList.contains('decode-effect')) return;
   
   element.classList.add('decode-effect');
+  
+  // Store the original HTML
+  const originalHTML = element.innerHTML;
+  
+  // Extract just the text content for decoding
   const text = element.textContent;
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-  element.textContent = '';
   
   const charsToReveal = [];
   for (let i = 0; i < text.length; i++) {
@@ -780,13 +786,14 @@ const runDecodeEffect = (element) => {
   
   const revealNext = () => {
     if (revealIndex >= totalChars) {
-      element.textContent = text;
+      // Restore original HTML at the end
+      element.innerHTML = originalHTML;
       element.classList.add('is-decoded');
       return;
     }
     
-    // Reveal characters in batches for faster effect
-    const batchSize = Math.max(1, Math.floor(totalChars / 30)); // Reveal ~30 characters total
+    // Reveal characters in batches for faster effect - 40% quicker
+    const batchSize = Math.max(1, Math.floor(totalChars / 18)); // Reveal ~18 steps instead of 30 (40% fewer steps)
     for (let b = 0; b < batchSize && revealIndex < totalChars; b++) {
       charsToReveal[revealIndex].revealed = true;
       revealIndex++;
@@ -808,14 +815,14 @@ const runDecodeEffect = (element) => {
     
     element.textContent = currentText;
     
-    // Fast reveal with easing (slow down as it progresses)
+    // Fast reveal with easing (slow down as it progresses) - 40% faster
     const progress = revealIndex / totalChars;
-    const speed = 30 + (progress * 50); // 30-80ms, slowing down
+    const speed = 18 + (progress * 30); // 18-48ms instead of 30-80ms
     setTimeout(revealNext, speed);
   };
   
-  // Start after a short delay
-  setTimeout(revealNext, 300);
+  // Start after a short delay - reduced by 40%
+  setTimeout(revealNext, 180);
 };
 
 // Logo hover animation - Minimal and reliable
@@ -918,12 +925,17 @@ if (scrollContainer) {
 
   // Page 1 animations
   const page1 = document.querySelector('#page1');
+  let page1Animated = false;
   if (page1) {
     const page1Observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
-        if (entry.isIntersecting) {
+        if (entry.isIntersecting && !page1Animated) {
+          page1Animated = true;
           runCVAnimation();
           runCoverLetterAnimation();
+          
+          // Unobserve after first intersection so it never triggers again
+          page1Observer.unobserve(page1);
         }
       });
     }, { threshold: 0.3 });
@@ -933,13 +945,21 @@ if (scrollContainer) {
   // Page 2 animations
   const page2 = document.querySelector('#page2');
   let taglineDecoded = false;
+  let titleGlitched = false;
+  let descriptionZoomed = false;
   
   if (page2) {
     const page2Observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
-          runTitleGlitch();
-          runDescriptionZoomOut();
+          if (!titleGlitched) {
+            titleGlitched = true;
+            runTitleGlitch();
+          }
+          if (!descriptionZoomed) {
+            descriptionZoomed = true;
+            runDescriptionZoomOut();
+          }
           
           // Decode effect for tagline - only once
           if (!taglineDecoded) {
@@ -949,10 +969,34 @@ if (scrollContainer) {
               runDecodeEffect(tagline);
             }
           }
+          
+          // Unobserve after first intersection so it never triggers again
+          page2Observer.unobserve(page2);
         }
       });
     }, { threshold: 0.3 });
     page2Observer.observe(page2);
+  }
+
+  // Page 3 (Works) animations
+  const page3 = document.querySelector('#page3');
+  let worksTitleGlitched = false;
+  
+  if (page3) {
+    const page3Observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          if (!worksTitleGlitched) {
+            worksTitleGlitched = true;
+            runTitleGlitch('#page3 .about-section__title');
+          }
+          
+          // Unobserve after first intersection
+          page3Observer.unobserve(page3);
+        }
+      });
+    }, { threshold: 0.3 });
+    page3Observer.observe(page3);
   }
 
   scrollContainer.addEventListener("scroll", handleScroll, { passive: true });
