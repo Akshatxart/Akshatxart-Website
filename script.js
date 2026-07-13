@@ -5,6 +5,7 @@ const revealItems = document.querySelectorAll(".reveal");
 const tiltPanel = document.querySelector("[data-tilt]");
 const internalLinks = document.querySelectorAll("[data-scroll]");
 const scrollContainer = document.querySelector(".scroll-container");
+const scrollContent = document.querySelector(".scroll-content");
 const backgroundVideo = document.querySelector(".background-video");
 
 const updateHeader = () => {
@@ -15,10 +16,105 @@ const updateHeader = () => {
   }
 };
 
+// ==============================
+// Buttery smooth scrolling (lerp) — replaces scroll-snap, like haoqi.design
+// ==============================
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+if (scrollContainer && !reduceMotion) {
+  let target = scrollContainer.scrollTop;
+  let rafId = null;
+
+  const maxScroll = () => scrollContainer.scrollHeight - scrollContainer.clientHeight;
+  const clamp = (v) => Math.max(0, Math.min(v, maxScroll()));
+
+  const animate = () => {
+    const current = scrollContainer.scrollTop;
+    const diff = target - current;
+    if (Math.abs(diff) < 0.5) {
+      scrollContainer.scrollTop = target;
+      rafId = null;
+      return;
+    }
+    scrollContainer.scrollTop = current + diff * 0.06; // lerp factor = smoothness/speed (lower = slower/butterier)
+    rafId = requestAnimationFrame(animate);
+  };
+
+  const start = () => { if (rafId === null) rafId = requestAnimationFrame(animate); };
+
+  scrollContainer.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const unit = e.deltaMode === 1 ? 16 : (e.deltaMode === 2 ? scrollContainer.clientHeight : 1);
+    target = clamp(target + e.deltaY * unit);
+    start();
+  }, { passive: false });
+
+  // Keep target in sync when the scroll changes from other sources
+  // (anchor clicks, keyboard, touch) so wheeling resumes from the right place.
+  scrollContainer.addEventListener('scroll', () => {
+    if (rafId === null) target = scrollContainer.scrollTop;
+  }, { passive: true });
+}
+
+// ==============================
+// Subtle "rolling screen" warp — content edges curve only while scrolling,
+// easing flat at rest. Applied to .scroll-content (not the scroller) so the
+// scrollbar is never distorted. No constant shadow overlays.
+// ==============================
+if (scrollContent && !reduceMotion) {
+  let rollLast = scrollContainer ? scrollContainer.scrollTop : window.scrollY;
+  let rollTarget = 0;
+  let rollCurrent = 0;
+
+  const onScroll = () => {
+    const top = scrollContainer ? scrollContainer.scrollTop : window.scrollY;
+    const delta = top - rollLast;
+    rollLast = top;
+    // Scrolling down tips the top edge back; 2x intensity.
+    rollTarget = Math.max(-4.8, Math.min(4.8, -delta * 0.44));
+  };
+
+  if (scrollContainer) {
+    scrollContainer.addEventListener('scroll', onScroll, { passive: true });
+  } else {
+    window.addEventListener('scroll', onScroll, { passive: true });
+  }
+
+  const rollTick = () => {
+    rollTarget *= 0.9; // ease the curve away when scrolling stops
+    rollCurrent += (rollTarget - rollCurrent) * 0.15;
+    scrollContent.style.setProperty('--roll-rx', rollCurrent.toFixed(3) + 'deg');
+    requestAnimationFrame(rollTick);
+  };
+  requestAnimationFrame(rollTick);
+}
+
+// ==============================
+// Bold the nav item matching the section currently in view
+// ==============================
+const navAnchorEls = document.querySelectorAll('.site-nav a');
+const navByHash = {};
+navAnchorEls.forEach((link) => {
+  const href = link.getAttribute('href') || '';
+  if (href.startsWith('#')) navByHash[href.slice(1)] = link;
+});
+
+const pageSections = document.querySelectorAll('.page-section');
+const navActiveObserver = new IntersectionObserver((entries) => {
+  entries.forEach((entry) => {
+    if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+      navAnchorEls.forEach((l) => l.classList.remove('is-current'));
+      const link = navByHash[entry.target.id];
+      if (link) link.classList.add('is-current');
+    }
+  });
+}, { threshold: [0.5, 0.6] });
+pageSections.forEach((s) => navActiveObserver.observe(s));
+
 const setActiveSection = (target) => {
-  const elements = scrollContainer 
-    ? scrollContainer.children 
-    : document.querySelectorAll("main section");
+  const elements = scrollContent
+    ? scrollContent.children
+    : (scrollContainer ? scrollContainer.children : document.querySelectorAll("main section"));
   Array.from(elements).forEach((section) => {
     section.classList.toggle("is-active", section === target);
   });
@@ -61,7 +157,82 @@ if (tiltPanel) {
    tiltPanel.addEventListener("pointerleave", () => {
      tiltPanel.style.transform = "";
    });
- }
+}
+
+// ==============================
+// Text glitch/scramble on hover (decode effect, like aino.agency)
+// Applies to the top navbar and the footer links.
+// ==============================
+const navLinks = document.querySelectorAll('.site-nav a, .site-footer__brand, .site-footer__year');
+
+// Characters to use for scrambling: uppercase letters, numbers, and symbols
+const scrambleChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+
+// Store original text + markup and animation state for each link
+const navState = new Map();
+
+navLinks.forEach((link) => {
+  navState.set(link, {
+    originalText: link.textContent,
+    originalHTML: link.innerHTML,
+    intervalId: null
+  });
+
+  // On hover: scramble the text and progressively resolve it back to the original word
+  const startScramble = () => {
+    const state = navState.get(link);
+    if (state.intervalId) clearInterval(state.intervalId);
+
+    state.originalText = link.textContent;
+    state.originalHTML = link.innerHTML;
+    link.classList.add('scrambling');
+
+    const original = state.originalText;
+    const length = original.length;
+    const totalFrames = 18; // ~0.45s at 25ms per frame
+    let frame = 0;
+
+    state.intervalId = setInterval(() => {
+      frame++;
+      const revealCount = Math.floor((frame / totalFrames) * length);
+
+      let out = '';
+      for (let i = 0; i < length; i++) {
+        const ch = original[i];
+        if (ch === ' ') {
+          out += ' ';
+        } else if (i < revealCount) {
+          out += ch;
+        } else {
+          out += scrambleChars[Math.floor(Math.random() * scrambleChars.length)];
+        }
+      }
+      // textContent is safe here (random chars may include < > &)
+      link.textContent = out;
+
+      if (frame >= totalFrames) {
+        clearInterval(state.intervalId);
+        state.intervalId = null;
+        link.innerHTML = state.originalHTML; // restore original markup (e.g. small-c)
+        link.classList.remove('scrambling');
+      }
+    }, 25);
+  };
+
+  // On leave: stop scrambling and restore the original text immediately
+  const stopScramble = () => {
+    const state = navState.get(link);
+    if (state.intervalId) {
+      clearInterval(state.intervalId);
+      state.intervalId = null;
+    }
+    link.innerHTML = state.originalHTML;
+    link.classList.remove('scrambling');
+  };
+
+  link.addEventListener('mouseenter', startScramble);
+  link.addEventListener('mouseleave', stopScramble);
+});
 
 // Cursor tilt on thumbnails (CV + cover letter)
 const tiltCursorTargets = document.querySelectorAll("[data-tilt-cursor]");
@@ -976,6 +1147,19 @@ if (scrollContainer) {
       });
     }, { threshold: 0.3 });
     page2Observer.observe(page2);
+  }
+
+  // Toggle the about background video (fixed, full-viewport) on/off so it
+  // always covers the homepage video while the about section is in view —
+  // prevents the homepage from peeking through the tilted content.
+  const aboutVideo = document.querySelector('.about-background-video');
+  if (page2 && aboutVideo) {
+    const aboutActiveObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        document.body.classList.toggle('about-active', entry.isIntersecting);
+      });
+    }, { threshold: 0.5 });
+    aboutActiveObserver.observe(page2);
   }
 
   // Page 3 (Works) animations

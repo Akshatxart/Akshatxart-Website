@@ -57,7 +57,22 @@ body {
   z-index: 2;
   overflow-y: auto;
   overflow-x: hidden;
-  scroll-snap-type: y mandatory;
+}
+
+/* Inner wrapper carries the subtle "rolling screen" tilt so the
+   scrollbar (on .scroll-container) is never transformed/distorted.
+   The small scale() overscans the viewport so the tilted edges never
+   reveal the background behind the section. */
+.scroll-content {
+  transform: perspective(1600px) rotateX(var(--roll-rx, 0deg)) scale(1.04);
+  transform-origin: center center;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-content {
+    transform: none;
+  }
 }
 
 .page-section {
@@ -137,9 +152,18 @@ body {
 /* Add side columns (CV thumbnail left / cover letter right) while keeping bio centered */
 #page2.page-section .about-section__title,
 #page2.page-section .about-section__tagline,
-#page2.page-section .about-section__bio {
+#page2.page-section .about-section__bio,
+#page2.page-section .about-side-label {
   position: relative;
   z-index: 2;
+}
+
+/* Keep About text readable on the (light) background video */
+#page2.page-section .about-section__title,
+#page2.page-section .about-section__tagline,
+#page2.page-section .about-section__bio,
+#page2.page-section .about-side-label {
+  color: var(--ink);
 }
 
 .about-section__docs {
@@ -241,11 +265,34 @@ body {
   text-decoration: none;
   text-transform: lowercase;
   pointer-events: auto;
-  transition: opacity 0.2s var(--ease);
+  transition: opacity 0.2s var(--ease), text-shadow 0.3s var(--ease);
+  /* Ensure stable width during scrambling */
+  display: inline-block;
+  min-width: max-content;
 }
 
 .site-nav a:hover {
-  opacity: 0.6;
+  opacity: 1;
+}
+
+/* Bold the nav item for the section currently in view (smooth faux-bold via
+   animated text-shadow, since font-weight can't transition smoothly) */
+.site-nav a.is-current:not(.scrambling) {
+  text-shadow:
+    0.35px 0 0 var(--ink),
+    -0.35px 0 0 var(--ink),
+    0 0.35px 0 var(--ink),
+    0 -0.35px 0 var(--ink);
+}
+
+/* Keep full opacity + prevent selection while the decode scramble is running on hover */
+.scrambling {
+  opacity: 1 !important;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  pointer-events: auto;
 }
 
 .site-header__logo {
@@ -723,7 +770,7 @@ body {
 
 
 .site-footer__brand:hover {
-  opacity: 0.7;
+  opacity: 1;
 }
 
 .site-footer__year {
@@ -750,7 +797,7 @@ body {
 }
 
 .site-footer__year:hover {
-  opacity: 0.7;
+  opacity: 1;
 }
 
 
@@ -812,6 +859,36 @@ body {
   object-fit: cover;
   z-index: -1;
   transition: opacity 0.8s var(--ease);
+}
+
+/* About section background video — full-viewport FIXED layer so it always
+   covers the homepage video when the about section is active (no peeking
+   through the tilted content, even during fast scroll). */
+.about-background-video {
+  position: fixed;
+  top: -5vh;
+  left: 0;
+  width: 100vw;
+  height: 110vh;
+  object-fit: cover;
+  z-index: -1;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s var(--ease);
+}
+
+body.about-active .about-background-video {
+  opacity: 1;
+}
+
+#page2.page-section {
+  position: relative;
+  overflow: hidden;
+}
+
+#page2.page-section .page-content {
+  position: relative;
+  z-index: 2;
 }
 
 /* ==============================
@@ -1131,5 +1208,4 @@ body.doc-viewer-open {
     font-size: 0.85rem;
   }
 }
-
 
