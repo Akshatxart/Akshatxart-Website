@@ -43,4 +43,4 @@ const server = http.createServer((req, res) => {
       }
       else {
         res.writeHead(500);
-        res.end('Sorry,
+        res.end('Sorry, something went wrong.');
