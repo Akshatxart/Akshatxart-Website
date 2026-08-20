@@ -1,5 +1,3 @@
-
-
 const header = document.querySelector("[data-header]");
 const revealItems = document.querySelectorAll(".reveal");
 const tiltPanel = document.querySelector("[data-tilt]");
@@ -16,9 +14,7 @@ const updateHeader = () => {
   }
 };
 
-// ==============================
-// Buttery smooth scrolling (lerp) — replaces scroll-snap, like haoqi.design
-// ==============================
+// Smooth scrolling (lerp)
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 if (scrollContainer && !reduceMotion) {
@@ -48,19 +44,12 @@ if (scrollContainer && !reduceMotion) {
     target = clamp(target + e.deltaY * unit);
     start();
   }, { passive: false });
-
-  // Keep target in sync when the scroll changes from other sources
-  // (anchor clicks, keyboard, touch) so wheeling resumes from the right place.
   scrollContainer.addEventListener('scroll', () => {
     if (rafId === null) target = scrollContainer.scrollTop;
   }, { passive: true });
 }
 
-// ==============================
-// Subtle "rolling screen" warp — content edges curve only while scrolling,
-// easing flat at rest. Applied to .scroll-content (not the scroller) so the
-// scrollbar is never distorted. No constant shadow overlays.
-// ==============================
+// Rolling screen warp
 if (scrollContent && !reduceMotion) {
   let rollLast = scrollContainer ? scrollContainer.scrollTop : window.scrollY;
   let rollTarget = 0;
@@ -89,9 +78,7 @@ if (scrollContent && !reduceMotion) {
   requestAnimationFrame(rollTick);
 }
 
-// ==============================
-// Bold the nav item matching the section currently in view
-// ==============================
+// Active nav highlighting
 const navAnchorEls = document.querySelectorAll('.site-nav a');
 const navByHash = {};
 navAnchorEls.forEach((link) => {
@@ -144,8 +131,6 @@ const revealObserver = new IntersectionObserver(
 );
 
 revealItems.forEach((item) => revealObserver.observe(item));
-
-
 if (tiltPanel) {
    tiltPanel.addEventListener("pointermove", (event) => {
      const rect = tiltPanel.getBoundingClientRect();
@@ -159,82 +144,72 @@ if (tiltPanel) {
    });
 }
 
-// ==============================
-// Text glitch/scramble on hover (decode effect, like aino.agency)
-// Applies to the top navbar and the footer links.
-// ==============================
-const navLinks = document.querySelectorAll('.site-nav a, .site-footer__brand, .site-footer__year');
+// Scramble-on-hover glitch
+const initScrambleOnHover = () => {
+  const scrambleChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#$%&@";
+  const reRandomizeEvery = 60; // ms — reference: 0.06
+  const accentColor = "#666666"; // greyscale accent for tinted chars
+  const targets = document.querySelectorAll(
+    ".site-nav a, .site-footer__brand, .site-footer__year, .about-side-label"
+  );
 
-// Characters to use for scrambling: uppercase letters, numbers, and symbols
-const scrambleChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+  targets.forEach((el) => {
+    let timer = null;
 
-// Store original text + markup and animation state for each link
-const navState = new Map();
+    // Capture the true original text + markup ONCE at init. Re-capturing at
+    // hover time would lock in a scrambled state when re-hovering mid-flicker
+    // (the bug: fast hovering permanently changed the text).
+    const originalHTML = el.innerHTML;
+    const original = el.textContent;
 
-navLinks.forEach((link) => {
-  navState.set(link, {
-    originalText: link.textContent,
-    originalHTML: link.innerHTML,
-    intervalId: null
-  });
+    const startScramble = () => {
+      // Stand down while the scroll-in title glitch (runTitleGlitch) runs
+      if (el._glitching) return;
 
-  // On hover: scramble the text and progressively resolve it back to the original word
-  const startScramble = () => {
-    const state = navState.get(link);
-    if (state.intervalId) clearInterval(state.intervalId);
+      // Rapid re-hovers restart cleanly from the stored original
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
 
-    state.originalText = link.textContent;
-    state.originalHTML = link.innerHTML;
-    link.classList.add('scrambling');
+      // ~60% of non-space characters participate (reference: Math.random() < 0.6)
+      const scrambleIdx = [];
+      for (let i = 0; i < original.length; i++) {
+        if (original[i] !== " " && Math.random() < 0.6) scrambleIdx.push(i);
+      }
 
-    const original = state.originalText;
-    const length = original.length;
-    const totalFrames = 18; // ~0.45s at 25ms per frame
-    let frame = 0;
+      el.classList.add("scrambling");
 
-    state.intervalId = setInterval(() => {
-      frame++;
-      const revealCount = Math.floor((frame / totalFrames) * length);
+      // Scramble until 75% of the 0.65s cycle, then snap back (reference behavior)
+      const snapAt = performance.now() + 0.65 * 0.75 * 1000;
 
-      let out = '';
-      for (let i = 0; i < length; i++) {
-        const ch = original[i];
-        if (ch === ' ') {
-          out += ' ';
-        } else if (i < revealCount) {
-          out += ch;
-        } else {
-          out += scrambleChars[Math.floor(Math.random() * scrambleChars.length)];
+      timer = setInterval(() => {
+        if (performance.now() >= snapAt) {
+          clearInterval(timer);
+          timer = null;
+          el.innerHTML = originalHTML; // restore original markup too (e.g. small-c)
+          el.classList.remove("scrambling");
+          return;
         }
-      }
-      // textContent is safe here (random chars may include < > &)
-      link.textContent = out;
+        const arr = original.split("");
+        scrambleIdx.forEach((idx) => {
+          const ch = scrambleChars[Math.floor(Math.random() * scrambleChars.length)];
+          // ~15% of scrambled chars render in the accent color (reference: 0.15)
+          arr[idx] = Math.random() < 0.15
+            ? `<span style="color: ${accentColor};">${ch}</span>`
+            : ch;
+        });
+        el.innerHTML = arr.join("");
+      }, reRandomizeEvery);
+    };
 
-      if (frame >= totalFrames) {
-        clearInterval(state.intervalId);
-        state.intervalId = null;
-        link.innerHTML = state.originalHTML; // restore original markup (e.g. small-c)
-        link.classList.remove('scrambling');
-      }
-    }, 25);
-  };
+    // Reference behavior: no reset on leave — the flicker completes and snaps.
+    el.addEventListener("mouseenter", startScramble);
+  });
+};
+initScrambleOnHover();
 
-  // On leave: stop scrambling and restore the original text immediately
-  const stopScramble = () => {
-    const state = navState.get(link);
-    if (state.intervalId) {
-      clearInterval(state.intervalId);
-      state.intervalId = null;
-    }
-    link.innerHTML = state.originalHTML;
-    link.classList.remove('scrambling');
-  };
-
-  link.addEventListener('mouseenter', startScramble);
-  link.addEventListener('mouseleave', stopScramble);
-});
-
-// Cursor tilt on thumbnails (CV + cover letter)
+// Cursor tilt on thumbnails
 const tiltCursorTargets = document.querySelectorAll("[data-tilt-cursor]");
 
 tiltCursorTargets.forEach((el) => {
@@ -254,10 +229,6 @@ tiltCursorTargets.forEach((el) => {
   });
 });
 
-
-
-
-
 /* ==============================
    In-site full-screen document viewer
    ============================== */
@@ -273,7 +244,7 @@ const zoomLabel = document.querySelector('[data-zoom-label]');
 const zoomInBtn = document.querySelector('[data-zoom-in]');
 const zoomOutBtn = document.querySelector('[data-zoom-out]');
 
-// Detect file:// protocol (PDF.js fetch fails here, need iframe fallback)
+// Detect file:// protocol (iframe fallback)
 const isFileProtocol = window.location.protocol === 'file:';
 
 const pdfMap = {
@@ -290,7 +261,7 @@ const pdfMap = {
 let lastScrollTop = 0;
 let lastActiveElement = null;
 
-// --- Shared zoom/scroll state (persists across open/close cycles) ---
+// Zoom/scroll state
 let zoomLevel = 100;
 let zoomWrapper = null;
 let scrollVelocity = 0;
@@ -320,7 +291,7 @@ const setZoom = (newLevel) => {
   applyZoom();
 };
 
-// --- One-time listeners (attached once, never duplicated) ---
+// One-time listeners
 if (zoomSlider) {
   zoomSlider.addEventListener('input', (e) => setZoom(Number(e.target.value)));
 }
@@ -717,6 +688,11 @@ const runTitleGlitch = (selector = '.about-section__title') => {
 
   // Prevent re-triggering if already running
   if (title._glitching) return;
+
+  // If the hover scramble is mid-flicker the title's textContent is scrambled —
+  // bailing keeps the glitch from capturing that as its "original" text.
+  if (title.classList.contains('scrambling')) return;
+
   title._glitching = true;
 
   const originalText = title.textContent;
@@ -753,8 +729,8 @@ const runTitleGlitch = (selector = '.about-section__title') => {
     return layer;
   };
 
-  const redLayer = createGlitchLayer('glitch-red', '#ff0040', 1.5, 0);
-  const cyanLayer = createGlitchLayer('glitch-cyan', '#00e5ff', -1.5, 0);
+  const redLayer = createGlitchLayer('glitch-red', '#555555', 1.5, 0);
+  const cyanLayer = createGlitchLayer('glitch-cyan', '#aaaaaa', -1.5, 0);
   
   const computedPos = window.getComputedStyle(title).position;
   if (computedPos === 'static') title.style.position = 'relative';
@@ -1216,3 +1192,150 @@ if (scrollContainer) {
 } else {
   window.addEventListener("scroll", updateHeader, { passive: true });
 }
+
+// --- Tagline <3 randomizing effect ---
+(function() {
+  const tagline = document.getElementById('taglineText');
+  if (!tagline) return;
+
+  const hearts = ['<3', '♡', '♥', '</3', '<3->']; // retro ASCII hearts — cupid = <3->
+  let lastStrong = null;
+
+  function findStrong() {
+    const s = tagline.querySelector('strong');
+    if (s) lastStrong = s;
+    return lastStrong;
+  }
+
+  // Randomize every ~1.2s — slow enough to read, fast enough to feel alive
+  setInterval(function() {
+    const strong = findStrong();
+    if (!strong) return;
+    strong.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+  }, 700);
+})();
+
+// --- Music player (jaskushii-style circular) ---
+(function() {
+  var audio = document.getElementById('contactAudio');
+  var muteBtn = document.getElementById('muteBtn');
+  var slider = document.getElementById('volumeSlider');
+  var iconMuted = document.getElementById('icon-muted');
+  var iconUnmuted = document.getElementById('icon-unmuted');
+  var control = document.getElementById('audioControl');
+  if (!audio || !muteBtn || !slider) return;
+
+  // --- Config ---
+  var START_TIME = 90; // 1:30
+  var LOOP_END = START_TIME + 30;
+  var defaultVol = 0.2;
+
+  // --- State ---
+  var userVol = defaultVol;     // slider value (what user chose)
+  var targetVol = 0;            // where the rAF loop is heading
+  var isPlaying = false;        // is audio.play() active
+  var isMuted = true;           // manual mute state
+  var lastTime = performance.now();
+
+  // --- Init audio ---
+  audio.volume = 0;
+  audio.muted = true;
+  audio.currentTime = START_TIME;
+  audio.load();
+  audio.addEventListener('timeupdate', function() {
+    if (audio.currentTime >= LOOP_END) audio.currentTime = START_TIME;
+  });
+
+  // --- Init UI ---
+  slider.value = defaultVol;
+  iconMuted.style.display = 'block';
+  iconUnmuted.style.display = 'none';
+  control.classList.remove('is-unmuted');
+
+  function updateSliderBg(val) {
+    slider.style.background = 'linear-gradient(to right, var(--ink) ' + (val * 100) + '%, rgba(10,10,10,0.2) ' + (val * 100) + '%)';
+  }
+  updateSliderBg(defaultVol);
+
+  function setIcons(muted) {
+    iconMuted.style.display = muted ? 'block' : 'none';
+    iconUnmuted.style.display = muted ? 'none' : 'block';
+    control.classList.toggle('is-unmuted', !muted);
+  }
+
+  // --- Time-based rAF: smooth volume toward targetVol, never touch audio.volume directly ---
+  function volumeLoop(now) {
+    var dt = Math.min((now - lastTime) / 1000, 0.1); // seconds, capped
+    lastTime = now;
+
+    // Lerp current volume toward target (time-based, ~4s to reach target)
+    var speed = 3.0; // higher = faster convergence
+    var factor = 1 - Math.exp(-speed * dt);
+    audio.volume += (targetVol - audio.volume) * factor;
+
+    // Play/pause management
+    if (!isMuted && !isPlaying && audio.volume > 0.003) {
+      audio.play().catch(function() {});
+      isPlaying = true;
+    } else if (isPlaying && (audio.volume < 0.003 || isMuted)) {
+      audio.pause();
+      isPlaying = false;
+    }
+
+    requestAnimationFrame(volumeLoop);
+  }
+  requestAnimationFrame(volumeLoop);
+
+  // --- Mute toggle: always goes through targetVol, never sets audio.volume directly ---
+  muteBtn.addEventListener('click', function() {
+    if (isMuted) {
+      isMuted = false;
+      audio.muted = false;
+      var v = parseFloat(slider.value) || defaultVol;
+      userVol = v;
+      targetVol = v;
+      setIcons(false);
+    } else {
+      isMuted = true;
+      targetVol = 0;
+      setIcons(true);
+    }
+  });
+
+  // --- Volume slider: sets userVol + targetVol, rAF handles the smooth transition ---
+  slider.addEventListener('input', function(e) {
+    var val = parseFloat(e.target.value);
+    userVol = val;
+    targetVol = val;
+    updateSliderBg(val);
+    if (val === 0) {
+      isMuted = true;
+      setIcons(true);
+    } else {
+      isMuted = false;
+      audio.muted = false;
+      setIcons(false);
+    }
+  });
+
+  // --- Scroll: page1 tracking + icon fade/blur ---
+  var page1 = document.getElementById('page1');
+  var scrollEl = document.querySelector('.scroll-container') || window;
+
+  scrollEl.addEventListener('scroll', function() {
+    if (!page1) return;
+    var rect = page1.getBoundingClientRect();
+    var vh = window.innerHeight;
+    // visible = 1 when page1 fully in view, 0 when fully scrolled past
+    var visible = Math.max(0, Math.min(1, (vh + rect.top) / vh));
+
+    // Volume
+    if (!isMuted) targetVol = userVol * visible;
+
+    // Icon fade + blur (liquid glass)
+    var fade = Math.max(0, Math.min(1, visible));
+    control.style.opacity = (0.55 * fade).toFixed(3);
+    control.style.filter = 'blur(' + ((1 - fade) * 10).toFixed(1) + 'px)';
+    control.style.transform = 'scale(' + (0.92 + fade * 0.08).toFixed(3) + ')';
+  }, { passive: true });
+})();

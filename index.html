@@ -28,7 +28,7 @@
 
     />
 
-    <link rel="stylesheet" href="styles.css?v=2" />
+    <link rel="stylesheet" href="styles.css?v=5" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css" />
 
   </head>
@@ -41,7 +41,7 @@
     </div>
 
     <video class="background-video" aria-hidden="true" autoplay muted loop playsinline preload="auto">
-      <source src="Main Background Video Website V1.mp4" type="video/mp4">
+      <source src="Background Homepage Video.mp4" type="video/mp4">
     </video>
 
     <video class="about-background-video" aria-hidden="true" autoplay muted loop playsinline preload="auto">
@@ -185,8 +185,198 @@
   </section>
 
   <section id="page3" class="page-section">
-    <div class="page-content">
+    <div class="page-content works-section">
       <h1 class="about-section__title reveal">works</h1>
+
+      <!-- Globe: project cards on a rotating 3D sphere (michalzalobny-style) -->
+      <div class="works-globe" id="worksGlobe">
+        <div class="works-globe__stage" id="worksGlobeStage">
+          <div class="works-globe__group" id="worksGlobeGroup">
+
+            <figure class="work-card" data-globe-card style="--accent: #ff3b30; --art: linear-gradient(135deg, #31101a 0%, #6b1626 55%, #a3243a 100%)">
+              <div class="work-card__inner" data-globe-card-inner>
+                <div class="work-card__art">
+                  <span class="work-card__index">01</span>
+                  <span class="work-card__glyph" aria-hidden="true">K</span>
+                  <span class="work-card__ring" aria-hidden="true"></span>
+                </div>
+                <figcaption class="work-card__meta">
+                  <span class="work-card__name">KNTXT</span>
+                  <span class="work-card__tag">Motion</span>
+                </figcaption>
+              </div>
+            </figure>
+
+            <figure class="work-card" data-globe-card style="--accent: #ff9f0a; --art: linear-gradient(135deg, #2e1c08 0%, #6b3a08 55%, #b06a10 100%)">
+              <div class="work-card__inner" data-globe-card-inner>
+                <div class="work-card__art">
+                  <span class="work-card__index">02</span>
+                  <span class="work-card__glyph" aria-hidden="true">A</span>
+                  <span class="work-card__ring" aria-hidden="true"></span>
+                </div>
+                <figcaption class="work-card__meta">
+                  <span class="work-card__name">AURORA</span>
+                  <span class="work-card__tag">Identity</span>
+                </figcaption>
+              </div>
+            </figure>
+
+            <figure class="work-card" data-globe-card style="--accent: #5ac8fa; --art: linear-gradient(135deg, #0a2230 0%, #0e4a68 55%, #1a78a6 100%)">
+              <div class="work-card__inner" data-globe-card-inner>
+                <div class="work-card__art">
+                  <span class="work-card__index">03</span>
+                  <span class="work-card__glyph" aria-hidden="true">N</span>
+                  <span class="work-card__ring" aria-hidden="true"></span>
+                </div>
+                <figcaption class="work-card__meta">
+                  <span class="work-card__name">NEXORA</span>
+                  <span class="work-card__tag">WebGL</span>
+                </figcaption>
+              </div>
+            </figure>
+
+            <figure class="work-card" data-globe-card style="--accent: #bf5af2; --art: linear-gradient(135deg, #231030 0%, #4a1e70 55%, #7a3aa6 100%)">
+              <div class="work-card__inner" data-globe-card-inner>
+                <div class="work-card__art">
+                  <span class="work-card__index">04</span>
+                  <span class="work-card__glyph" aria-hidden="true">L</span>
+                  <span class="work-card__ring" aria-hidden="true"></span>
+                </div>
+                <figcaption class="work-card__meta">
+                  <span class="work-card__name">LUMEN</span>
+                  <span class="work-card__tag">Installation</span>
+                </figcaption>
+              </div>
+            </figure>
+
+            <figure class="work-card" data-globe-card style="--accent: #30d158; --art: linear-gradient(135deg, #0a2414 0%, #105c30 55%, #1e8f4e 100%)">
+              <div class="work-card__inner" data-globe-card-inner>
+                <div class="work-card__art">
+                  <span class="work-card__index">05</span>
+                  <span class="work-card__glyph" aria-hidden="true">V</span>
+                  <span class="work-card__ring" aria-hidden="true"></span>
+                </div>
+                <figcaption class="work-card__meta">
+                  <span class="work-card__name">VYRD</span>
+                  <span class="work-card__tag">Experience</span>
+                </figcaption>
+              </div>
+            </figure>
+
+            <figure class="work-card" data-globe-card style="--accent: #0a84ff; --art: linear-gradient(135deg, #0a1830 0%, #123f74 55%, #1e63ad 100%)">
+              <div class="work-card__inner" data-globe-card-inner>
+                <div class="work-card__art">
+                  <span class="work-card__index">06</span>
+                  <span class="work-card__glyph" aria-hidden="true">O</span>
+                  <span class="work-card__ring" aria-hidden="true"></span>
+                </div>
+                <figcaption class="work-card__meta">
+                  <span class="work-card__name">OBSCURA</span>
+                  <span class="work-card__tag">Film</span>
+                </figcaption>
+              </div>
+            </figure>
+
+            <figure class="work-card" data-globe-card style="--accent: #ff2d55; --art: linear-gradient(135deg, #2e0a1e 0%, #6b1240 55%, #b01f62 100%)">
+              <div class="work-card__inner" data-globe-card-inner>
+                <div class="work-card__art">
+                  <span class="work-card__index">07</span>
+                  <span class="work-card__glyph" aria-hidden="true">P</span>
+                  <span class="work-card__ring" aria-hidden="true"></span>
+                </div>
+                <figcaption class="work-card__meta">
+                  <span class="work-card__name">PULSE</span>
+                  <span class="work-card__tag">Generative</span>
+                </figcaption>
+              </div>
+            </figure>
+
+            <figure class="work-card" data-globe-card style="--accent: #64d2ff; --art: linear-gradient(135deg, #062832 0%, #0d5c70 55%, #1a90ad 100%)">
+              <div class="work-card__inner" data-globe-card-inner>
+                <div class="work-card__art">
+                  <span class="work-card__index">08</span>
+                  <span class="work-card__glyph" aria-hidden="true">H</span>
+                  <span class="work-card__ring" aria-hidden="true"></span>
+                </div>
+                <figcaption class="work-card__meta">
+                  <span class="work-card__name">HALO</span>
+                  <span class="work-card__tag">Lighting</span>
+                </figcaption>
+              </div>
+            </figure>
+
+            <figure class="work-card" data-globe-card style="--accent: #ffd60a; --art: linear-gradient(135deg, #2e2606 0%, #6b5c0e 55%, #b09a1a 100%)">
+              <div class="work-card__inner" data-globe-card-inner>
+                <div class="work-card__art">
+                  <span class="work-card__index">09</span>
+                  <span class="work-card__glyph" aria-hidden="true">E</span>
+                  <span class="work-card__ring" aria-hidden="true"></span>
+                </div>
+                <figcaption class="work-card__meta">
+                  <span class="work-card__name">ECHO</span>
+                  <span class="work-card__tag">Sound</span>
+                </figcaption>
+              </div>
+            </figure>
+
+            <figure class="work-card" data-globe-card style="--accent: #aeb0b8; --art: linear-gradient(135deg, #17181c 0%, #33353d 55%, #55575f 100%)">
+              <div class="work-card__inner" data-globe-card-inner>
+                <div class="work-card__art">
+                  <span class="work-card__index">10</span>
+                  <span class="work-card__glyph" aria-hidden="true">M</span>
+                  <span class="work-card__ring" aria-hidden="true"></span>
+                </div>
+                <figcaption class="work-card__meta">
+                  <span class="work-card__name">MONO</span>
+                  <span class="work-card__tag">Typography</span>
+                </figcaption>
+              </div>
+            </figure>
+
+            <figure class="work-card" data-globe-card style="--accent: #ff6b00; --art: linear-gradient(135deg, #2e1204 0%, #6b2f06 55%, #b0540f 100%)">
+              <div class="work-card__inner" data-globe-card-inner>
+                <div class="work-card__art">
+                  <span class="work-card__index">11</span>
+                  <span class="work-card__glyph" aria-hidden="true">F</span>
+                  <span class="work-card__ring" aria-hidden="true"></span>
+                </div>
+                <figcaption class="work-card__meta">
+                  <span class="work-card__name">FLUX</span>
+                  <span class="work-card__tag">3D</span>
+                </figcaption>
+              </div>
+            </figure>
+
+            <figure class="work-card" data-globe-card style="--accent: #34c759; --art: linear-gradient(135deg, #0a2418 0%, #105c38 55%, #1e8f5c 100%)">
+              <div class="work-card__inner" data-globe-card-inner>
+                <div class="work-card__art">
+                  <span class="work-card__index">12</span>
+                  <span class="work-card__glyph" aria-hidden="true">T</span>
+                  <span class="work-card__ring" aria-hidden="true"></span>
+                </div>
+                <figcaption class="work-card__meta">
+                  <span class="work-card__name">TERRA</span>
+                  <span class="work-card__tag">Environments</span>
+                </figcaption>
+              </div>
+            </figure>
+
+            <!-- Eight wireframe hoops (globe wireframe, canvas-rendered) -->
+            <div class="works-globe__hoops" id="worksGlobeHoops">
+              <canvas class="works-globe__hoop-canvas" id="hoop0"></canvas>
+              <canvas class="works-globe__hoop-canvas" id="hoop1"></canvas>
+              <canvas class="works-globe__hoop-canvas" id="hoop2"></canvas>
+              <canvas class="works-globe__hoop-canvas" id="hoop3"></canvas>
+              <canvas class="works-globe__hoop-canvas" id="hoop4"></canvas>
+              <canvas class="works-globe__hoop-canvas" id="hoop5"></canvas>
+              <canvas class="works-globe__hoop-canvas" id="hoop6"></canvas>
+              <canvas class="works-globe__hoop-canvas" id="hoop7"></canvas>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
     </div>
   </section>
   </div>
@@ -203,7 +393,24 @@
     </footer>
 
 
+    <audio id="contactAudio" preload="auto" loop>
+      <source src="assets/contact-music.mp3" type="audio/mpeg">
+    </audio>
+
+    <div class="audio-control" id="audioControl">
+      <button id="muteBtn" class="mute-btn" aria-label="Toggle music">
+        <svg id="icon-muted" viewBox="0 0 24 24" width="16" height="16">
+          <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+        </svg>
+        <svg id="icon-unmuted" viewBox="0 0 24 24" width="16" height="16" style="display:none;">
+          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+        </svg>
+      </button>
+      <input type="range" id="volumeSlider" class="volume-slider" min="0" max="1" step="0.01" value="0.2">
+    </div>
+
     <script src="gsap.min.js"></script>
+    <script src="works-globe.js"></script>
     <script src="pdf-data.js"></script>
     <script src="script.js"></script>
 
