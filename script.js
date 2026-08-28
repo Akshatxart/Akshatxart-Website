@@ -261,6 +261,23 @@ const pdfMap = {
 let lastScrollTop = 0;
 let lastActiveElement = null;
 
+// PDF pre-cache: parse documents in background so clicks are instant
+const pdfCache = {};
+const preloadPDFs = () => {
+  if (!window.pdfjsLib || !window.__pdfData) return;
+  Object.keys(window.__pdfData).forEach((key) => {
+    const loadingTask = pdfjsLib.getDocument({
+      url: window.__pdfData[key],
+      disableWorker: true
+    });
+    loadingTask.promise.then((pdf) => {
+      pdfCache[key] = pdf;
+    }).catch(() => {});
+  });
+};
+// Start preloading after a short delay so page render isn't blocked
+setTimeout(preloadPDFs, 500);
+
 // Zoom/scroll state
 let zoomLevel = 100;
 let zoomWrapper = null;
@@ -410,20 +427,24 @@ const renderPdfToCanvases = async (pdfUrl, docKey) => {
   zoomLevel = 100;
 
   try {
-    let loadingTask;
-    if (window.__pdfData && window.__pdfData[docKey]) {
-      // Use embedded base64 data (works on both file:// and HTTP)
-      loadingTask = pdfjsLib.getDocument({
+    let pdf;
+    if (pdfCache[docKey]) {
+      // Use pre-cached PDF — instant
+      pdf = pdfCache[docKey];
+      delete pdfCache[docKey];
+    } else if (window.__pdfData && window.__pdfData[docKey]) {
+      // Fallback: load from embedded base64 data
+      const loadingTask = pdfjsLib.getDocument({
         url: window.__pdfData[docKey],
         disableWorker: true
       });
+      pdf = await loadingTask.promise;
     } else if (isFileProtocol) {
-      // file:// without base64 data — can't load, show error
       throw new Error('No embedded PDF data available on file://');
     } else {
-      loadingTask = pdfjsLib.getDocument(pdfUrl);
+      const loadingTask = pdfjsLib.getDocument(pdfUrl);
+      pdf = await loadingTask.promise;
     }
-    const pdf = await loadingTask.promise;
 
     // Calculate fit-to-width scale from page 1
     const panelWidth = docScrollContainer.clientWidth || 800;
