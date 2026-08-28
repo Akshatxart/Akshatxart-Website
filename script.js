@@ -275,8 +275,12 @@ const preloadPDFs = () => {
     }).catch(() => {});
   });
 };
-// Start preloading after a short delay so page render isn't blocked
-setTimeout(preloadPDFs, 500);
+// Start preloading as soon as PDF.js is ready
+if (window.pdfjsLib && window.__pdfData) {
+  preloadPDFs();
+} else {
+  window.addEventListener('load', preloadPDFs);
+}
 
 // Zoom/scroll state
 let zoomLevel = 100;
@@ -453,10 +457,9 @@ const renderPdfToCanvases = async (pdfUrl, docKey) => {
     const fitScale = panelWidth / defaultViewport.width;
     const renderScale = fitScale;
 
-    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-      const page = (pageNum === 1) ? firstPage : await pdf.getPage(pageNum);
+    // Helper: render a single page and return its DOM element
+    const renderPage = async (page) => {
       const viewport = page.getViewport({ scale: renderScale });
-
       const pageDiv = document.createElement('div');
       pageDiv.className = 'doc-viewer__page';
       pageDiv.style.width = `${viewport.width}px`;
@@ -470,7 +473,6 @@ const renderPdfToCanvases = async (pdfUrl, docKey) => {
 
       await page.render({ canvasContext: ctx, viewport }).promise;
 
-      // Text layer (manual positioning for selectability)
       const textContent = await page.getTextContent();
       const textLayerDiv = document.createElement('div');
       textLayerDiv.className = 'textLayer';
@@ -479,7 +481,6 @@ const renderPdfToCanvases = async (pdfUrl, docKey) => {
 
       textContent.items.forEach((item) => {
         if (!item.str && !item.hasEOL) return;
-
         const vt = viewport.transform;
         const it = item.transform;
         const tx = [
@@ -490,21 +491,16 @@ const renderPdfToCanvases = async (pdfUrl, docKey) => {
           vt[0] * it[4] + vt[2] * it[5] + vt[4],
           vt[1] * it[4] + vt[3] * it[5] + vt[5],
         ];
-
         const span = document.createElement('span');
         span.textContent = item.str || '';
         span.style.left = `${tx[4]}px`;
         span.style.top = `${tx[5]}px`;
-
         const fontSize = Math.sqrt(tx[2] * tx[2] + tx[3] * tx[3]);
         if (fontSize > 0) span.style.fontSize = `${fontSize}px`;
         if (item.fontName) span.style.fontFamily = item.fontName;
-
         const textWidth = item.width * viewport.scale;
         if (textWidth > 0 && item.str) span.style.width = `${textWidth}px`;
-
         textLayerDiv.appendChild(span);
-
         if (item.url) {
           const a = document.createElement('a');
           a.href = item.url;
@@ -519,11 +515,23 @@ const renderPdfToCanvases = async (pdfUrl, docKey) => {
       });
 
       pageDiv.appendChild(textLayerDiv);
-      zoomWrapper.appendChild(pageDiv);
-    }
+      return pageDiv;
+    };
 
-    // Apply initial fit-to-width zoom
+    // Render page 1 first — show immediately for instant feedback
+    const page1Div = await renderPage(firstPage);
+    zoomWrapper.appendChild(page1Div);
     applyZoom();
+
+    // Render remaining pages in background (non-blocking)
+    const renderRemaining = async () => {
+      for (let pageNum = 2; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const pageDiv = await renderPage(page);
+        zoomWrapper.appendChild(pageDiv);
+      }
+    };
+    renderRemaining();
 
   } catch (err) {
     console.error('PDF render error:', err);
