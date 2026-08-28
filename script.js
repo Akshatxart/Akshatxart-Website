@@ -411,8 +411,8 @@ const renderPdfToCanvases = async (pdfUrl, docKey) => {
 
   try {
     let loadingTask;
-    if (isFileProtocol && window.__pdfData && window.__pdfData[docKey]) {
-      // file:// — use embedded base64 data (no fetch/XHR needed)
+    if (window.__pdfData && window.__pdfData[docKey]) {
+      // Use embedded base64 data (works on both file:// and HTTP)
       loadingTask = pdfjsLib.getDocument({
         url: window.__pdfData[docKey],
         disableWorker: true
@@ -531,8 +531,8 @@ const openDoc = (docKey) => {
   docDownloadA.href = doc.pdfUrl;
   docDownloadA.download = doc.filename;
 
-  if (isFileProtocol && window.__pdfData && window.__pdfData[docKey] && window.pdfjsLib) {
-    // file:// with embedded base64 data — use PDF.js for full rendering
+  if (window.__pdfData && window.__pdfData[docKey] && window.pdfjsLib) {
+    // Embedded base64 data available — use PDF.js for full rendering (works on both file:// and HTTP)
     if (docPanel) docPanel.classList.remove('is-iframe-mode');
     if (docIframe) { docIframe.src = ''; }
     renderPdfToCanvases(doc.pdfUrl, docKey);
@@ -545,7 +545,7 @@ const openDoc = (docKey) => {
     docPanel.classList.add('is-iframe-mode');
     docIframe.src = encodeURI(doc.pdfUrl) + '#toolbar=0&navpanes=0&view=FitH';
   } else {
-    // HTTP + PDF.js — full-featured rendering
+    // Fallback: try loading PDF from URL
     if (docPanel) docPanel.classList.remove('is-iframe-mode');
     if (docIframe) { docIframe.src = ''; }
     renderPdfToCanvases(doc.pdfUrl, docKey);
