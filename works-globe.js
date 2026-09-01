@@ -24,7 +24,7 @@
   var cards = Array.prototype.slice.call(document.querySelectorAll("[data-globe-card]"));
   var scrollContainer = document.querySelector(".scroll-container");
 
-  if (!section || !stage || !group || !cards.length) return;
+  if (!section || !stage || !group) return;
 
   var hoopsContainer = document.getElementById("worksGlobeHoops");
   var canvasIds = ["hoop0", "hoop1", "hoop2", "hoop3", "hoop4", "hoop5", "hoop6", "hoop7"];
@@ -232,13 +232,8 @@
     var w = stage.clientWidth || section.clientWidth;
     var h = stage.clientHeight || section.clientHeight;
     if (w <= 0 || h <= 0) return;
-    var cardW = cards[0].offsetWidth || 240;
-    var cardH = cards[0].offsetHeight || 150;
-    var pad = 14;
-    var maxByY = h / 2 - cardH / 2 - pad;
-    var maxByX = w / 2 - cardW / 2 - pad;
     var cap = 0.32 * Math.min(w, h);
-    R = Math.max(120, Math.min(maxByY, maxByX, cap));
+    R = Math.max(120, cap);
 
     // rebuild hoops for the new radius
     rebuildHoops();
