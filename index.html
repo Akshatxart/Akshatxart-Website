@@ -175,7 +175,27 @@
         <div class="works-thumbs__item"><img src="assets/Cover Letter - Akshat Singh.png" alt="" /></div>
         <div class="works-thumbs__item"><img src="assets/CV - Curriculum Vitae - Akshat Singh- Page 2_1.png" alt="" /></div>
       </div>
-n      <!-- Globe wireframe (decorative, visible on right) -->
+
+      <script>
+      (function(){
+        var thumbs=document.querySelectorAll('.works-thumbs__item');
+        var container=document.querySelector('.works-thumbs');
+        thumbs.forEach(function(t){
+          t.addEventListener('click',function(){
+            if(t.classList.contains('is-active')){
+              t.classList.remove('is-active');
+              container.classList.remove('is-expanded');
+            } else {
+              thumbs.forEach(function(x){x.classList.remove('is-active')});
+              t.classList.add('is-active');
+              container.classList.add('is-expanded');
+            }
+          });
+        });
+      })();
+      </script>
+
+      <!-- Globe wireframe (decorative, visible on right) -->
       <div class="works-globe" id="worksGlobe">
         <div class="works-globe__stage" id="worksGlobeStage">
           <div class="works-globe__group" id="worksGlobeGroup">

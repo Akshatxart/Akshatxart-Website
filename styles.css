@@ -200,6 +200,24 @@ body {
   transform: scale(0.98);
 }
 
+/* expanded state (click to open) */
+.works-thumbs__item.is-active {
+  width: 56vw;
+  height: 32vh;
+  z-index: 20;
+}
+
+.works-thumbs__item.is-active img {
+  filter: grayscale(0) contrast(1);
+  transform: scale(1);
+}
+
+.works-thumbs.is-expanded .works-thumbs__item:not(.is-active) {
+  opacity: 0;
+  transform: scale(0.9);
+  pointer-events: none;
+}
+
 #page2.page-section .about-section__title,
 #page2.page-section .about-section__tagline,
 #page2.page-section .about-section__bio,
