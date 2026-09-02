@@ -178,18 +178,85 @@
 
       <script>
       (function(){
-        var thumbs=document.querySelectorAll('.works-thumbs__item');
+        if(typeof gsap==='undefined')return;
+        var items=document.querySelectorAll('.works-thumbs__item');
         var container=document.querySelector('.works-thumbs');
-        thumbs.forEach(function(t){
-          t.addEventListener('click',function(){
-            if(t.classList.contains('is-active')){
-              t.classList.remove('is-active');
-              container.classList.remove('is-expanded');
-            } else {
-              thumbs.forEach(function(x){x.classList.remove('is-active')});
-              t.classList.add('is-active');
-              container.classList.add('is-expanded');
+        var activeIdx=-1;
+
+        // Set initial clip-path via JS (images start hidden, revealed by intro)
+        gsap.set(items,{clipPath:'inset(0% 100% 0% 0%)'});
+
+        // Intro: staggered clip-path reveal (valentin-mor.com entrance)
+        gsap.to(items,{
+          clipPath:'inset(0% 0% 0% 0%)',
+          duration:1.8,
+          stagger:0.17,
+          ease:'expo.out',
+          delay:0.3
+        });
+
+        items.forEach(function(item,idx){
+          // Hover: wipe in
+          item.addEventListener('pointerenter',function(){
+            if(activeIdx>=0)return;
+            gsap.to(item.querySelector('img'),{
+              filter:'grayscale(0) contrast(1)',
+              scale:1.06,
+              duration:0.8,
+              ease:'expo.out'
+            });
+            items.forEach(function(other){
+              if(other!==item){
+                gsap.to(other.querySelector('img'),{
+                  filter:'grayscale(0.6) contrast(0.85)',
+                  duration:0.5,
+                  ease:'power2.out'
+                });
+              }
+            });
+          });
+          item.addEventListener('pointerleave',function(){
+            if(activeIdx>=0)return;
+            gsap.to(item.querySelector('img'),{
+              filter:'grayscale(0.5) contrast(0.92)',
+              scale:1,
+              duration:0.6,
+              ease:'expo.out'
+            });
+            items.forEach(function(other){
+              if(other!==item){
+                gsap.to(other.querySelector('img'),{
+                  filter:'grayscale(0.5) contrast(0.92)',
+                  duration:0.5,
+                  ease:'power2.out'
+                });
+              }
+            });
+          });
+
+          // Click: open/close
+          item.addEventListener('click',function(){
+            var img=item.querySelector('img');
+            if(activeIdx===idx){
+              // close
+              activeIdx=-1;
+              gsap.to(img,{filter:'grayscale(0.5) contrast(0.92)',scale:1,duration:0.8,ease:'expo.out'});
+              items.forEach(function(other){
+                gsap.to(other,{opacity:1,y:0,duration:0.8,ease:'expo.out'});
+                gsap.to(other.querySelector('img'),{filter:'grayscale(0.5) contrast(0.92)',scale:1,duration:0.6,ease:'power2.out'});
+              });
+              return;
             }
+            if(activeIdx>=0)return;
+            activeIdx=idx;
+            // dim others with stagger (valentin-mor.com style)
+            items.forEach(function(other){
+              if(other!==item){
+                gsap.to(other,{opacity:0,y:10,duration:0.5,stagger:0.05,ease:'power2.out'});
+              }
+            });
+            // reveal active
+            gsap.to(img,{filter:'grayscale(0) contrast(1)',scale:1.1,duration:1.2,ease:'expo.out'});
           });
         });
       })();
