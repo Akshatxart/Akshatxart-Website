@@ -152,15 +152,12 @@ body {
 
 /* ---- works section ---- */
 .works-thumbs {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.6vw;
   z-index: 5;
+  margin-top: clamp(20px, 4vh, 50px);
 }
 
 .works-thumbs__item {
@@ -1295,13 +1292,6 @@ body.doc-viewer-open {
 
   #page3.page-section .page-content.works-section {
     flex-direction: column;
-  }
-
-  .works-thumbs {
-    position: relative;
-    left: auto;
-    top: auto;
-    transform: none;
   }
 
   .works-thumbs__item {
