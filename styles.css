@@ -1241,17 +1241,17 @@ body.doc-viewer-open {
    ============================================================ */
 .works-globe {
   position: absolute;
-  right: -25%;
+  right: -13.33%;
   top: 0;
   bottom: 0;
-  width: 50%;
+  width: 40%;
   z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   pointer-events: none;
-  transform: scale(2);
+  transform: scale(1.2);
   transform-origin: center center;
 }
 
