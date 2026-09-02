@@ -166,9 +166,48 @@
 
   <section id="page3" class="page-section">
     <div class="page-content works-section">
-      <h1 class="about-section__title reveal">works</h1>
 
-      <!-- Globe: project cards on a rotating 3D sphere (michalzalobny-style) -->
+      <!-- Left: project carousel (valentin-mor.com style) -->
+      <div class="works-projects">
+        <h1 class="works-projects__title reveal">works</h1>
+        <div class="works-projects__label">PROJECTS <span class="works-projects__arrow">↴</span></div>
+        <ul class="works-projects__list">
+          <li class="works-projects__item" data-project="0">
+            <span class="works-projects__num">001</span>
+            <span class="works-projects__name">AKSHATXART</span>
+          </li>
+          <li class="works-projects__item" data-project="1">
+            <span class="works-projects__num">002</span>
+            <span class="works-projects__name">CV PORTFOLIO</span>
+          </li>
+          <li class="works-projects__item" data-project="2">
+            <span class="works-projects__num">003</span>
+            <span class="works-projects__name">COVER LETTER</span>
+          </li>
+          <li class="works-projects__item" data-project="3">
+            <span class="works-projects__num">004</span>
+            <span class="works-projects__name">VISUAL WORK</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Center: stacked project thumbnails (valentin-mor.com style) -->
+      <div class="works-thumbs">
+        <div class="works-thumbs__item" data-thumb="0">
+          <img src="assets/Akshat Picture 2.png" alt="Project 1" />
+        </div>
+        <div class="works-thumbs__item" data-thumb="1">
+          <img src="assets/CV - Curriculum Vitae - Akshat Singh- Page 1.png" alt="Project 2" />
+        </div>
+        <div class="works-thumbs__item" data-thumb="2">
+          <img src="assets/Cover Letter - Akshat Singh.png" alt="Project 3" />
+        </div>
+        <div class="works-thumbs__item" data-thumb="3">
+          <img src="assets/CV - Curriculum Vitae - Akshat Singh- Page 2_1.png" alt="Project 4" />
+        </div>
+      </div>
+
+      <!-- Right: globe (half-visible, 2x bigger) -->
       <div class="works-globe" id="worksGlobe">
         <div class="works-globe__stage" id="worksGlobeStage">
           <div class="works-globe__group" id="worksGlobeGroup">
@@ -185,7 +224,7 @@
               <canvas class="works-globe__hoop-canvas" id="hoop7"></canvas>
             </div>
 
-            <!-- Globe project cards (michalzalobny.com-style) -->
+            <!-- Globe project cards -->
             <figure class="work-card" data-globe-card>
               <div class="work-card__inner" data-globe-card-inner>
                 <div class="work-card__media">
@@ -217,8 +256,8 @@
 
           </div>
         </div>
-
       </div>
+
     </div>
   </section>
 
