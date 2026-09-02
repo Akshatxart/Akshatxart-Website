@@ -1121,17 +1121,17 @@ body.doc-viewer-open {
    ============================================================ */
 .works-globe {
   position: absolute;
-  right: -20%;
+  right: -15%;
   top: 0;
   bottom: 0;
-  width: 50%;
+  width: 45%;
   z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   pointer-events: none;
-  transform: scale(2.5);
+  transform: scale(1.5);
   transform-origin: center center;
 }
 
