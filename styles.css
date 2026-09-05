@@ -150,39 +150,6 @@ body {
   flex-direction: column;
 }
 
-/* ---- works section ---- */
-.works-thumbs {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.6vw;
-  z-index: 5;
-  margin-top: clamp(20px, 4vh, 50px);
-}
-
-.works-thumbs__item {
-  width: 28vw;
-  height: 8.5vh;
-  overflow: hidden;
-  cursor: pointer;
-  position: relative;
-  will-change: transform, opacity;
-}
-
-.works-thumbs__item img {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(1);
-  width: 110%;
-  height: auto;
-  min-height: 100%;
-  object-fit: cover;
-  display: block;
-  filter: grayscale(0.5) contrast(0.92);
-  will-change: filter, clip-path, transform;
-}
-
 #page2.page-section .about-section__title,
 #page2.page-section .about-section__tagline,
 #page2.page-section .about-section__bio,
@@ -1252,6 +1219,93 @@ body.doc-viewer-open {
   transform: scale(1);
 }
 
+/* ---- Creative Space 1 - numbered pill (gionatannese.com style) ---- */
+.creative-space {
+  position: static;
+  display: inline-flex;
+  align-items: flex-end;
+  padding: 6px 12px;
+  border-radius: 4px;
+  background-color: rgba(237, 237, 237, 0.5);
+  -webkit-backdrop-filter: blur(40px);
+  backdrop-filter: blur(40px);
+  overflow: hidden;
+  cursor: pointer;
+  text-decoration: none;
+  /* Always visible by default. The entrance animation is a progressive
+     enhancement — creative-space.js only hides it momentarily to animate in. */
+  will-change: transform, opacity, background-color;
+  transition:
+    background-color 300ms var(--ease),
+    transform 300ms var(--ease),
+    opacity 700ms var(--ease);
+}
+
+/* pre-reveal state, added by creative-space.js only when GSAP is unavailable */
+.creative-space.cs-pre {
+  visibility: visible;
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.creative-space.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+.creative-space:hover {
+  background-color: rgba(216, 216, 216, 0.5);
+  transform: translateY(-1px);
+}
+
+.creative-space:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.creative-space__bar {
+  display: block;
+  width: 94px; /* synced to the label width by creative-space.js */
+  height: 9px;
+  margin-right: 3px;
+  flex: none;
+}
+
+.creative-space__label {
+  position: absolute;
+  top: 6px;
+  left: 12px;
+  white-space: nowrap;
+  font-family: Consolas, 'Roboto Mono', Menlo, Monaco, 'Courier New', monospace;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+
+.creative-space__index {
+  font-family: Consolas, 'Roboto Mono', Menlo, Monaco, 'Courier New', monospace;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.creative-space.is-in .creative-space__index {
+  animation: creative-space-index-in 520ms cubic-bezier(0.34, 1.56, 0.64, 1) 260ms both;
+}
+
+@keyframes creative-space-index-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* ---- reduced motion: static sphere, no spin ---- */
 @media (prefers-reduced-motion: reduce) {
   .work-card__inner {
@@ -1262,6 +1316,15 @@ body.doc-viewer-open {
   }
   .works-globe__hoops {
     animation: none;
+  }
+  .creative-space,
+  .creative-space__label,
+  .creative-space__index {
+    transition: none;
+    animation: none;
+  }
+  .creative-space {
+    visibility: visible;
   }
 }
 
@@ -1277,9 +1340,8 @@ body.doc-viewer-open {
     flex-direction: column;
   }
 
-  .works-thumbs__item {
-    width: 85vw;
-    height: 24vw;
+  .creative-space {
+    margin-top: 16px;
   }
 
   .works-globe {
